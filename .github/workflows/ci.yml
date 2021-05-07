@@ -5,7 +5,7 @@ on:
 
 jobs:
   pulumi-gcp-global-project-preview:
-    name: Pulumi GCP Global Project Preview
+    name: Pulumi Preview
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -30,11 +30,20 @@ jobs:
       - name: Install Pulumi CLI
         uses: pulumi/action-install-pulumi-cli@v1
 
-      - name: Pulumi Preview
+      - name: Preview global project
         uses: pulumi/actions@v3
         with:
           command: preview
           stack-name: global
           work-dir: ./global/
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+      - name: Preview staging project
+        uses: pulumi/actions@v3
+        with:
+          command: preview
+          stack-name: staging
+          work-dir: ./staging/
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
