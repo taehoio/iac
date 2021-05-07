@@ -1,0 +1,57 @@
+name: deployment
+
+on:
+  - deployment
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    if: github.event.deployment.environment == 'production' || github.event.deployment.environment == 'staging' || github.event.deployment.environment == 'development'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
+
+      - name: Set deployment status to in_progress
+        uses: ./.github/actions/github-deploy-status
+        with:
+          state: "in_progress"
+          description: "deployment started"
+        env:
+          GITHUB_DEPLOY_EVENT_URL: ${{ github.event.deployment.statuses_url }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save kubeconfig
+        run: doctl kubernetes cluster kubeconfig save k8s-do-sfo2-taeho
+
+      - name: Install linkerd2
+        run: curl -sL https://run.linkerd.io/install | sh
+
+      - name: Install kustomize
+        uses: imranismail/setup-kustomize@v1
+        with:
+          kustomize-version: "3.8.7"
+
+      - name: Apply
+        run: |
+          export PATH=$PATH:/home/runner/.linkerd2/bin
+          kustomize build kustomize/${{ github.event.deployment.environment }} \
+            | IMAGE_TAG=$GITHUB_SHA envsubst \
+            | linkerd inject - \
+            | kubectl -n ${{ github.event.deployment.environment }} apply -f -
+
+      - name: Set deployment status
+        if: always()
+        uses: ./.github/actions/github-deploy-status
+        with:
+          state: "${{ job.status }}"
+          description: "deployment ${{ job.status }}"
+        env:
+          GITHUB_DEPLOY_EVENT_URL: ${{ github.event.deployment.statuses_url }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
