@@ -4,7 +4,7 @@ on:
   - push
 
 jobs:
-  pulumi-gcp-global-project-preview:
+  preview:
     name: Pulumi Preview
     runs-on: ubuntu-20.04
     steps:
@@ -34,6 +34,7 @@ jobs:
         uses: pulumi/actions@v3
         with:
           command: preview
+          comment-on-pr: true
           stack-name: global
           work-dir: ./global/
         env:
@@ -43,6 +44,7 @@ jobs:
         uses: pulumi/actions@v3
         with:
           command: preview
+          comment-on-pr: true
           stack-name: staging
           work-dir: ./staging/
         env:
