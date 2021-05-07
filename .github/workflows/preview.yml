@@ -1,7 +1,9 @@
 name: preview
 
 on:
-  - push
+  push:
+    branches-ignore:
+      - main
 
 jobs:
   preview:
