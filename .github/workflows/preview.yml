@@ -31,8 +31,6 @@ jobs:
 
       - name: Install Pulumi CLI
         uses: pulumi/action-install-pulumi-cli@v1
-        with:
-          pulumi-version: 3.2.1
 
       - name: Download go mod dependencies
         run: go mod download
