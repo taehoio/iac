@@ -11,7 +11,12 @@ func main() {
 		if err != nil {
 			return err
 		}
+
 		if err := runTaehoioDNSRecordSets(ctx, project); err != nil {
+			return err
+		}
+
+		if _, err := newPulumiCICDServiceAccount(ctx); err != nil {
 			return err
 		}
 
