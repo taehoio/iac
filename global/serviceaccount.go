@@ -1,7 +1,7 @@
 package main
 
 import (
-	serviceaccount "github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceAccount"
+	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
