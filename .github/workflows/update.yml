@@ -1,0 +1,56 @@
+name: update
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  update:
+    name: Pulumi Update
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 5
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          submodules: recursive
+
+      - name: Set up Golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: taehoio-global
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Install Pulumi CLI
+        uses: pulumi/action-install-pulumi-cli@v1
+
+      - name: Download go mod dependencies
+        run: go mod download
+
+      - name: Update global project
+        uses: pulumi/actions@v3
+        with:
+          command: up
+          comment-on-pr: true
+          stack-name: global
+          work-dir: ./global/
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+      - name: Update staging project
+        uses: pulumi/actions@v3
+        with:
+          command: up
+          comment-on-pr: true
+          stack-name: staging
+          work-dir: ./staging/
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
