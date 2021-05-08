@@ -20,6 +20,10 @@ func main() {
 			return err
 		}
 
+		if _, err := newDockerRegistry(ctx); err != nil {
+			return err
+		}
+
 		return nil
 	})
 }
