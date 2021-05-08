@@ -7,20 +7,27 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
+		// Project
 		project, err := iac.NewProject(ctx, iac.GlobalProjectId, iac.GlobalProjectId)
 		if err != nil {
 			return err
 		}
 
+		// DNS
 		if err := runTaehoioDNSRecordSets(ctx, project); err != nil {
 			return err
 		}
 
-		if _, err := newPulumiCICDServiceAccount(ctx); err != nil {
+		// Service Accounts
+		if _, err := newPulumiCICDServiceAccount(ctx, project); err != nil {
+			return err
+		}
+		if _, err := newDockerRegistryServiceAccount(ctx, project); err != nil {
 			return err
 		}
 
-		if _, err := newDockerRegistry(ctx); err != nil {
+		// Artifact Registry
+		if _, err := newDockerRegistry(ctx, project); err != nil {
 			return err
 		}
 
