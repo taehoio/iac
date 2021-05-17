@@ -70,47 +70,11 @@ func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project
 
 	if _, err := dns.NewRecordSet(
 		ctx,
-		"hello-taehoio-cname",
+		"api-taehoio-cname",
 		&dns.RecordSetArgs{
 			Project:     project.ProjectId,
 			ManagedZone: mz.Name,
-			Name:        pulumi.String("hello.taeho.io."),
-			Type:        pulumi.String("CNAME"),
-			Rrdatas: pulumi.StringArray{
-				pulumi.String("ghs.googlehosted.com."),
-			},
-			Ttl: pulumi.Int(5),
-		},
-		pulumi.Protect(false),
-	); err != nil {
-		return err
-	}
-
-	if _, err := dns.NewRecordSet(
-		ctx,
-		"hello-staging-taehoio-cname",
-		&dns.RecordSetArgs{
-			Project:     project.ProjectId,
-			ManagedZone: mz.Name,
-			Name:        pulumi.String("hello.staging.taeho.io."),
-			Type:        pulumi.String("CNAME"),
-			Rrdatas: pulumi.StringArray{
-				pulumi.String("ghs.googlehosted.com."),
-			},
-			Ttl: pulumi.Int(5),
-		},
-		pulumi.Protect(false),
-	); err != nil {
-		return err
-	}
-
-	if _, err := dns.NewRecordSet(
-		ctx,
-		"hello-internal-staging-taehoio-cname",
-		&dns.RecordSetArgs{
-			Project:     project.ProjectId,
-			ManagedZone: mz.Name,
-			Name:        pulumi.String("hello-internal.staging.taeho.io."),
+			Name:        pulumi.String("api.taeho.io."),
 			Type:        pulumi.String("CNAME"),
 			Rrdatas: pulumi.StringArray{
 				pulumi.String("ghs.googlehosted.com."),
@@ -129,24 +93,6 @@ func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project
 			Project:     project.ProjectId,
 			ManagedZone: mz.Name,
 			Name:        pulumi.String("api.staging.taeho.io."),
-			Type:        pulumi.String("CNAME"),
-			Rrdatas: pulumi.StringArray{
-				pulumi.String("ghs.googlehosted.com."),
-			},
-			Ttl: pulumi.Int(5),
-		},
-		pulumi.Protect(false),
-	); err != nil {
-		return err
-	}
-
-	if _, err := dns.NewRecordSet(
-		ctx,
-		"staging-taehoio-cname",
-		&dns.RecordSetArgs{
-			Project:     project.ProjectId,
-			ManagedZone: mz.Name,
-			Name:        pulumi.String("staging.taeho.io."),
 			Type:        pulumi.String("CNAME"),
 			Rrdatas: pulumi.StringArray{
 				pulumi.String("ghs.googlehosted.com."),
@@ -192,6 +138,24 @@ func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project
 				pulumi.String("2001:4860:4802:34::15"),
 				pulumi.String("2001:4860:4802:36::15"),
 				pulumi.String("2001:4860:4802:38::15"),
+			},
+			Ttl: pulumi.Int(5),
+		},
+		pulumi.Protect(false),
+	); err != nil {
+		return err
+	}
+
+	if _, err := dns.NewRecordSet(
+		ctx,
+		"staging-taehoio-cname",
+		&dns.RecordSetArgs{
+			Project:     project.ProjectId,
+			ManagedZone: mz.Name,
+			Name:        pulumi.String("staging.taeho.io."),
+			Type:        pulumi.String("CNAME"),
+			Rrdatas: pulumi.StringArray{
+				pulumi.String("ghs.googlehosted.com."),
 			},
 			Ttl: pulumi.Int(5),
 		},
