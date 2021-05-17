@@ -79,7 +79,7 @@ func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project
 			Rrdatas: pulumi.StringArray{
 				pulumi.String("ghs.googlehosted.com."),
 			},
-			Ttl: pulumi.Int(3600),
+			Ttl: pulumi.Int(5),
 		},
 		pulumi.Protect(false),
 	); err != nil {
@@ -97,7 +97,25 @@ func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project
 			Rrdatas: pulumi.StringArray{
 				pulumi.String("ghs.googlehosted.com."),
 			},
-			Ttl: pulumi.Int(3600),
+			Ttl: pulumi.Int(5),
+		},
+		pulumi.Protect(false),
+	); err != nil {
+		return err
+	}
+
+	if _, err := dns.NewRecordSet(
+		ctx,
+		"hello-internal-staging-taehoio",
+		&dns.RecordSetArgs{
+			Project:     project.ProjectId,
+			ManagedZone: mz.Name,
+			Name:        pulumi.String("hello-internal.staging.taeho.io."),
+			Type:        pulumi.String("CNAME"),
+			Rrdatas: pulumi.StringArray{
+				pulumi.String("ghs.googlehosted.com."),
+			},
+			Ttl: pulumi.Int(5),
 		},
 		pulumi.Protect(false),
 	); err != nil {
@@ -115,7 +133,7 @@ func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project
 			Rrdatas: pulumi.StringArray{
 				pulumi.String("ghs.googlehosted.com."),
 			},
-			Ttl: pulumi.Int(3600),
+			Ttl: pulumi.Int(5),
 		},
 		pulumi.Protect(false),
 	); err != nil {
