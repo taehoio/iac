@@ -6,11 +6,16 @@ import (
 )
 
 const (
-	OrgId            = "1052569693362"
-	BillingAccount   = "01FD1D-5CA95C-CA4195"
-	TokyoLocation    = "asia-northeast1"
-	GlobalProjectId  = "taehoio-global"
-	StagingProjectId = "taehoio-staging"
+	OrgId          = "1052569693362"
+	BillingAccount = "01FD1D-5CA95C-CA4195"
+
+	GlobalProjectId     = "taehoio-global"
+	StagingProjectId    = "taehoio-staging"
+	ProductionProjectId = "taehoio-production"
+
+	TokyoLocation = "asia-northeast1"
+
+	DockerRegistryBasePath = "asia-northeast1-docker.pkg.dev/taehoio-global/docker-registry/"
 )
 
 func NewProject(ctx *pulumi.Context, projectId, projectName string) (*organizations.Project, error) {
