@@ -19,10 +19,11 @@ func newDockerRegistry(ctx *pulumi.Context, project *organizations.Project) (*ar
 		return nil, err
 	}
 
-	_, err = projects.NewIAMBinding(ctx, "taehoio-staging-project-docker-registry-read", &projects.IAMBindingArgs{
+	_, err = projects.NewIAMBinding(ctx, "docker-registry-read", &projects.IAMBindingArgs{
 		Project: project.ProjectId,
 		Members: pulumi.StringArray{
 			pulumi.String("serviceAccount:service-879516865171@serverless-robot-prod.iam.gserviceaccount.com"),
+			pulumi.String("serviceAccount:service-290041120046@serverless-robot-prod.iam.gserviceaccount.com"),
 		},
 		Role: pulumi.String("roles/artifactregistry.reader"),
 	}, pulumi.Protect(false))

@@ -8,10 +8,6 @@ import (
 	"github.com/taehoio/iac"
 )
 
-const (
-	registryBasePath = "asia-northeast1-docker.pkg.dev/taehoio-global/docker-registry/"
-)
-
 func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) error {
 	if _, err := newNotionproxyCloudRunService(ctx, project); err != nil {
 		return err
@@ -42,7 +38,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
-						Image: pulumi.String(registryBasePath + serviceName + "@sha256:0ef41356e21c272066057d335bd48a79131b8a4e6e4eace137f6bcdcdb90b4f5"),
+						Image: pulumi.String(iac.DockerRegistryBasePath + serviceName + "@sha256:0ef41356e21c272066057d335bd48a79131b8a4e6e4eace137f6bcdcdb90b4f5"),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								ContainerPort: pulumi.Int(3000),
@@ -75,10 +71,10 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
-	_, err = cloudrun.NewDomainMapping(ctx, "staging-taehoio", &cloudrun.DomainMappingArgs{
+	_, err = cloudrun.NewDomainMapping(ctx, "taehoio", &cloudrun.DomainMappingArgs{
 		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
-		Name:     pulumi.String("staging.taeho.io"),
+		Name:     pulumi.String("taeho.io"),
 		Metadata: cloudrun.DomainMappingMetadataArgs{
 			Namespace: project.ProjectId,
 		},

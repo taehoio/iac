@@ -74,3 +74,13 @@ jobs:
           work-dir: ./staging/
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+      - name: Update production project
+        uses: pulumi/actions@v3
+        with:
+          command: up
+          comment-on-pr: true
+          stack-name: production
+          work-dir: ./production/
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
