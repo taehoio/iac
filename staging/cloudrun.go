@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
+	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/projects"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/taehoio/iac"
@@ -27,6 +28,17 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		Project:     project.ProjectId,
 		AccountId:   pulumi.String(serviceName),
 		DisplayName: pulumi.String(serviceName),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = projects.NewIAMBinding(ctx, serviceName+"-profiler-agent", &projects.IAMBindingArgs{
+		Project: project.ProjectId,
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", sa.Email),
+		},
+		Role: pulumi.String("roles/cloudprofiler.agent"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
