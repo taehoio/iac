@@ -17,6 +17,12 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if _, err := newNotionproxyCloudRunService(ctx, project); err != nil {
 		return err
 	}
+	if _, err := newApigatewayCloudRunService(ctx, project); err != nil {
+		return err
+	}
+	if _, err := newBaemincryptoCloudRunService(ctx, project); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -104,4 +110,202 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	}
 
 	return notionproxyCloudRunService, nil
+}
+
+func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
+	serviceName := "apigateway"
+
+	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
+		Project:     project.ProjectId,
+		AccountId:   pulumi.String(serviceName),
+		DisplayName: pulumi.String(serviceName),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = projects.NewIAMBinding(ctx, serviceName+"-profiler-agent", &projects.IAMBindingArgs{
+		Project: project.ProjectId,
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", sa.Email),
+		},
+		Role: pulumi.String("roles/cloudprofiler.agent"),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	apigatewayCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+		Location:                 pulumi.String(iac.TokyoLocation),
+		Project:                  project.ProjectId,
+		Name:                     pulumi.String(serviceName),
+		AutogenerateRevisionName: pulumi.Bool(true),
+		Metadata: cloudrun.ServiceMetadataArgs{
+			Annotations: pulumi.ToStringMap(map[string]string{
+				"run.googleapis.com/ingress": "all",
+			}),
+		},
+		Template: cloudrun.ServiceTemplateArgs{
+			Metadata: cloudrun.ServiceTemplateMetadataArgs{
+				Annotations: pulumi.ToStringMap(map[string]string{
+					"run.googleapis.com/vpc-access-connector": "projects/taehoio-staging/locations/asia-northeast1/connectors/taehoio-vpc-access",
+					"run.googleapis.com/vpc-access-egress":    "all-traffic",
+					"autoscaling.knative.dev/maxScale":        "100",
+				}),
+			},
+			Spec: cloudrun.ServiceTemplateSpecArgs{
+				ContainerConcurrency: pulumi.Int(80),
+				Containers: cloudrun.ServiceTemplateSpecContainerArray{
+					cloudrun.ServiceTemplateSpecContainerArgs{
+						Image: pulumi.String(registryBasePath + serviceName + ":d4aa3183d49c916da3669954f4664e413397f12e"),
+						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
+							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								ContainerPort: pulumi.Int(8080),
+							},
+						},
+						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ENV"),
+								Value: pulumi.String("staging"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("BAEMINCRYPTO_GRPC_SERVICE_ENDPOINT"),
+								Value: pulumi.String("baemincrypto-5hwa5dthla-an.a.run.app:443"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("IS_GRPC_INSECURE"),
+								Value: pulumi.String("false"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("CERT_FILE"),
+								Value: pulumi.String("/etc/ssl/certs/ca-certificates.crt"),
+							},
+						},
+						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
+							Limits: pulumi.StringMap{
+								"cpu":    pulumi.String("1000m"),
+								"memory": pulumi.String("256Mi"),
+							},
+						},
+					},
+				},
+				ServiceAccountName: sa.Email,
+				TimeoutSeconds:     pulumi.Int(300),
+			},
+		},
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
+		Location: pulumi.String(iac.TokyoLocation),
+		Project:  project.ProjectId,
+		Service:  apigatewayCloudRunService.Name,
+		Role:     pulumi.String("roles/run.invoker"),
+		Member:   pulumi.String("allUsers"),
+	}); err != nil {
+		return nil, err
+	}
+
+	_, err = cloudrun.NewDomainMapping(ctx, "api-staging-taehoio", &cloudrun.DomainMappingArgs{
+		Location: pulumi.String(iac.TokyoLocation),
+		Project:  project.ProjectId,
+		Name:     pulumi.String("api.staging.taeho.io"),
+		Metadata: cloudrun.DomainMappingMetadataArgs{
+			Namespace: project.ProjectId,
+		},
+		Spec: cloudrun.DomainMappingSpecArgs{
+			RouteName:       apigatewayCloudRunService.Name,
+			CertificateMode: pulumi.String("AUTOMATIC"),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return apigatewayCloudRunService, nil
+}
+
+func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
+	serviceName := "baemincrypto"
+
+	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
+		Project:     project.ProjectId,
+		AccountId:   pulumi.String(serviceName),
+		DisplayName: pulumi.String(serviceName),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = projects.NewIAMBinding(ctx, serviceName+"-profiler-agent", &projects.IAMBindingArgs{
+		Project: project.ProjectId,
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", sa.Email),
+		},
+		Role: pulumi.String("roles/cloudprofiler.agent"),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	baemincryptoCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+		Location:                 pulumi.String(iac.TokyoLocation),
+		Project:                  project.ProjectId,
+		Name:                     pulumi.String(serviceName),
+		AutogenerateRevisionName: pulumi.Bool(true),
+		Metadata: cloudrun.ServiceMetadataArgs{
+			Annotations: pulumi.ToStringMap(map[string]string{
+				"run.googleapis.com/ingress": "internal",
+			}),
+		},
+		Template: cloudrun.ServiceTemplateArgs{
+			Metadata: cloudrun.ServiceTemplateMetadataArgs{
+				Annotations: pulumi.ToStringMap(map[string]string{
+					"run.googleapis.com/vpc-access-connector": "projects/taehoio-staging/locations/asia-northeast1/connectors/taehoio-vpc-access",
+					"run.googleapis.com/vpc-access-egress":    "all-traffic",
+					"autoscaling.knative.dev/maxScale":        "100",
+				}),
+			},
+			Spec: cloudrun.ServiceTemplateSpecArgs{
+				ContainerConcurrency: pulumi.Int(80),
+				Containers: cloudrun.ServiceTemplateSpecContainerArray{
+					cloudrun.ServiceTemplateSpecContainerArgs{
+						Image: pulumi.String(registryBasePath + serviceName + ":2e2dcbb5904afcf069a25b7f0b27d7799d0cd6a5"),
+						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
+							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								ContainerPort: pulumi.Int(50051),
+								Name:          pulumi.String("h2c"),
+							},
+						},
+						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{},
+						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
+							Limits: pulumi.StringMap{
+								"cpu":    pulumi.String("1000m"),
+								"memory": pulumi.String("512Mi"),
+							},
+						},
+					},
+				},
+				ServiceAccountName: sa.Email,
+				TimeoutSeconds:     pulumi.Int(300),
+			},
+		},
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
+		Location: pulumi.String(iac.TokyoLocation),
+		Project:  project.ProjectId,
+		Service:  baemincryptoCloudRunService.Name,
+		Role:     pulumi.String("roles/run.invoker"),
+		Member:   pulumi.String("allUsers"),
+	}); err != nil {
+		return nil, err
+	}
+
+	return baemincryptoCloudRunService, nil
 }
