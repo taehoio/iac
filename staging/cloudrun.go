@@ -78,8 +78,8 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	}
 
 	notionproxyCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
-		Location:                 pulumi.String(iac.TokyoLocation),
 		Project:                  project.ProjectId,
+		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
 		AutogenerateRevisionName: pulumi.Bool(true),
 		Template: cloudrun.ServiceTemplateArgs{
@@ -111,8 +111,8 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	}
 
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Service:  notionproxyCloudRunService.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
@@ -121,8 +121,8 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	}
 
 	_, err = cloudrun.NewDomainMapping(ctx, "staging-taehoio", &cloudrun.DomainMappingArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Name:     pulumi.String("staging.taeho.io"),
 		Metadata: cloudrun.DomainMappingMetadataArgs{
 			Namespace: project.ProjectId,
@@ -152,8 +152,8 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 	}
 
 	apigatewayCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
-		Location:                 pulumi.String(iac.TokyoLocation),
 		Project:                  project.ProjectId,
+		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
 		AutogenerateRevisionName: pulumi.Bool(true),
 		Metadata: cloudrun.ServiceMetadataArgs{
@@ -223,8 +223,8 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 	}
 
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Service:  apigatewayCloudRunService.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
@@ -233,8 +233,8 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 	}
 
 	_, err = cloudrun.NewDomainMapping(ctx, "api-staging-taehoio", &cloudrun.DomainMappingArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Name:     pulumi.String("api.staging.taeho.io"),
 		Metadata: cloudrun.DomainMappingMetadataArgs{
 			Namespace: project.ProjectId,
@@ -249,8 +249,8 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 	}
 
 	_, err = cloudrun.NewDomainMapping(ctx, "api-taehoio", &cloudrun.DomainMappingArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Name:     pulumi.String("api.taeho.io"),
 		Metadata: cloudrun.DomainMappingMetadataArgs{
 			Namespace: project.ProjectId,
@@ -280,8 +280,8 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 	}
 
 	baemincryptoCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
-		Location:                 pulumi.String(iac.TokyoLocation),
 		Project:                  project.ProjectId,
+		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
 		AutogenerateRevisionName: pulumi.Bool(true),
 		Metadata: cloudrun.ServiceMetadataArgs{
@@ -327,8 +327,8 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 	}
 
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Service:  baemincryptoCloudRunService.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
