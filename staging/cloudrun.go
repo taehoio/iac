@@ -14,17 +14,42 @@ const (
 )
 
 func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) error {
-	if _, err := newNotionproxyCloudRunService(ctx, project); err != nil {
+	notionproxy, err := newNotionproxyCloudRunService(ctx, project)
+	if err != nil {
 		return err
 	}
-	if _, err := newApigatewayCloudRunService(ctx, project); err != nil {
+	apigateway, err := newApigatewayCloudRunService(ctx, project)
+	if err != nil {
 		return err
 	}
-	if _, err := newBaemincryptoCloudRunService(ctx, project); err != nil {
+	baemincrypto, err := newBaemincryptoCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
+	notionproxySA := stringOutPtrToStringOutput(notionproxy.Template.Spec().ServiceAccountName())
+	apigatewaySA := stringOutPtrToStringOutput(apigateway.Template.Spec().ServiceAccountName())
+	baemincryptoSA := stringOutPtrToStringOutput(baemincrypto.Template.Spec().ServiceAccountName())
+
+	_, err = projects.NewIAMBinding(ctx, "service-profiler-agent", &projects.IAMBindingArgs{
+		Project: project.ProjectId,
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", notionproxySA),
+			pulumi.Sprintf("serviceAccount:%s", apigatewaySA),
+			pulumi.Sprintf("serviceAccount:%s", baemincryptoSA),
+		},
+		Role: pulumi.String("roles/cloudprofiler.agent"),
+	}, pulumi.Protect(false))
+	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func stringOutPtrToStringOutput(spo pulumi.StringPtrOutput) pulumi.StringOutput {
+	return spo.ApplyT(func(sp *string) string {
+		return *sp
+	}).(pulumi.StringOutput)
 }
 
 func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
@@ -34,17 +59,6 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		Project:     project.ProjectId,
 		AccountId:   pulumi.String(serviceName),
 		DisplayName: pulumi.String(serviceName),
-	}, pulumi.Protect(false))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = projects.NewIAMBinding(ctx, serviceName+"-profiler-agent", &projects.IAMBindingArgs{
-		Project: project.ProjectId,
-		Members: pulumi.StringArray{
-			pulumi.Sprintf("serviceAccount:%s", sa.Email),
-		},
-		Role: pulumi.String("roles/cloudprofiler.agent"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
@@ -119,17 +133,6 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		Project:     project.ProjectId,
 		AccountId:   pulumi.String(serviceName),
 		DisplayName: pulumi.String(serviceName),
-	}, pulumi.Protect(false))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = projects.NewIAMBinding(ctx, serviceName+"-profiler-agent", &projects.IAMBindingArgs{
-		Project: project.ProjectId,
-		Members: pulumi.StringArray{
-			pulumi.Sprintf("serviceAccount:%s", sa.Email),
-		},
-		Role: pulumi.String("roles/cloudprofiler.agent"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
@@ -234,17 +237,6 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		Project:     project.ProjectId,
 		AccountId:   pulumi.String(serviceName),
 		DisplayName: pulumi.String(serviceName),
-	}, pulumi.Protect(false))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = projects.NewIAMBinding(ctx, serviceName+"-profiler-agent", &projects.IAMBindingArgs{
-		Project: project.ProjectId,
-		Members: pulumi.StringArray{
-			pulumi.Sprintf("serviceAccount:%s", sa.Email),
-		},
-		Role: pulumi.String("roles/cloudprofiler.agent"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
