@@ -248,6 +248,22 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
+	_, err = cloudrun.NewDomainMapping(ctx, "api-taehoio", &cloudrun.DomainMappingArgs{
+		Location: pulumi.String(iac.TokyoLocation),
+		Project:  project.ProjectId,
+		Name:     pulumi.String("api.taeho.io"),
+		Metadata: cloudrun.DomainMappingMetadataArgs{
+			Namespace: project.ProjectId,
+		},
+		Spec: cloudrun.DomainMappingSpecArgs{
+			RouteName:       apigatewayCloudRunService.Name,
+			CertificateMode: pulumi.String("AUTOMATIC"),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return apigatewayCloudRunService, nil
 }
 
