@@ -87,7 +87,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
-						Image: pulumi.String(registryBasePath + serviceName + "@sha256:0ef41356e21c272066057d335bd48a79131b8a4e6e4eace137f6bcdcdb90b4f5"),
+						Image: pulumi.String(registryBasePath + serviceName + ":78c93977da22bd4de81c48365ff7b80f06117249"),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								ContainerPort: pulumi.Int(3000),
@@ -173,7 +173,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
-						Image: pulumi.String(registryBasePath + serviceName + ":d4aa3183d49c916da3669954f4664e413397f12e"),
+						Image: pulumi.String(registryBasePath + serviceName + ":c6b608f0bfb28e27747e54b25392c67c3fba41f0"),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								ContainerPort: pulumi.Int(8080),
@@ -189,12 +189,20 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 								Value: pulumi.String("baemincrypto-5hwa5dthla-an.a.run.app:443"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("IS_GRPC_INSECURE"),
-								Value: pulumi.String("false"),
+								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
+								Value: pulumi.String("true"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("CERT_FILE"),
+								Name:  pulumi.String("CA_CERT_FILE"),
 								Value: pulumi.String("/etc/ssl/certs/ca-certificates.crt"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_PROFILE"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_TRACE"),
+								Value: pulumi.String("true"),
 							},
 						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
