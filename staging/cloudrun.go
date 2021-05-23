@@ -43,6 +43,19 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		return err
 	}
 
+	_, err = projects.NewIAMBinding(ctx, "service-trace-agent", &projects.IAMBindingArgs{
+		Project: project.ProjectId,
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", notionproxySA),
+			pulumi.Sprintf("serviceAccount:%s", apigatewaySA),
+			pulumi.Sprintf("serviceAccount:%s", baemincryptoSA),
+		},
+		Role: pulumi.String("roles/cloudtrace.agent"),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -40,6 +40,17 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
+	_, err = projects.NewIAMBinding(ctx, serviceName+"-trace-agent", &projects.IAMBindingArgs{
+		Project: project.ProjectId,
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", sa.Email),
+		},
+		Role: pulumi.String("roles/cloudtrace.agent"),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
 	notionproxyCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Location:                 pulumi.String(iac.TokyoLocation),
 		Project:                  project.ProjectId,
