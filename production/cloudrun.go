@@ -52,8 +52,8 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	}
 
 	notionproxyCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
-		Location:                 pulumi.String(iac.TokyoLocation),
 		Project:                  project.ProjectId,
+		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
 		AutogenerateRevisionName: pulumi.Bool(true),
 		Template: cloudrun.ServiceTemplateArgs{
@@ -85,8 +85,8 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	}
 
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Service:  notionproxyCloudRunService.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
@@ -95,8 +95,8 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	}
 
 	_, err = cloudrun.NewDomainMapping(ctx, "taehoio", &cloudrun.DomainMappingArgs{
-		Location: pulumi.String(iac.TokyoLocation),
 		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
 		Name:     pulumi.String("taeho.io"),
 		Metadata: cloudrun.DomainMappingMetadataArgs{
 			Namespace: project.ProjectId,
