@@ -77,6 +77,8 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
+	imageTag := "52f02f82d17d12f043b72f444003db090be72f9a"
+
 	notionproxyCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
@@ -87,7 +89,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
-						Image: pulumi.String(registryBasePath + serviceName + ":78c93977da22bd4de81c48365ff7b80f06117249"),
+						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								ContainerPort: pulumi.Int(3000),
@@ -96,7 +98,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
 							Limits: pulumi.StringMap{
 								"cpu":    pulumi.String("1000m"),
-								"memory": pulumi.String("512Mi"),
+								"memory": pulumi.String("256Mi"),
 							},
 						},
 					},
@@ -151,6 +153,8 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
+	imageTag := "7973144f977996369f6ba2afd6227327fad227a6"
+
 	apigatewayCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
@@ -164,16 +168,14 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		Template: cloudrun.ServiceTemplateArgs{
 			Metadata: cloudrun.ServiceTemplateMetadataArgs{
 				Annotations: pulumi.ToStringMap(map[string]string{
-					"run.googleapis.com/vpc-access-connector": "projects/taehoio-staging/locations/asia-northeast1/connectors/taehoio-vpc-access",
-					"run.googleapis.com/vpc-access-egress":    "all-traffic",
-					"autoscaling.knative.dev/maxScale":        "100",
+					"autoscaling.knative.dev/maxScale": "100",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
-						Image: pulumi.String(registryBasePath + serviceName + ":c6b608f0bfb28e27747e54b25392c67c3fba41f0"),
+						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								ContainerPort: pulumi.Int(8080),
@@ -187,6 +189,10 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("BAEMINCRYPTO_GRPC_SERVICE_ENDPOINT"),
 								Value: pulumi.String("baemincrypto-5hwa5dthla-an.a.run.app:443"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("BAEMINCRYPTO_GRPC_SERVICE_URL"),
+								Value: pulumi.String("https://baemincrypto-5hwa5dthla-an.a.run.app"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
@@ -203,6 +209,14 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_TRACE"),
 								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("IS_IN_GCP"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ID_TOKEN"),
+								Value: pulumi.String("NOT_USED_IN_GCP"),
 							},
 						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
@@ -279,6 +293,8 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		return nil, err
 	}
 
+	imageTag := "2e2dcbb5904afcf069a25b7f0b27d7799d0cd6a5"
+
 	baemincryptoCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
@@ -286,22 +302,20 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		AutogenerateRevisionName: pulumi.Bool(true),
 		Metadata: cloudrun.ServiceMetadataArgs{
 			Annotations: pulumi.ToStringMap(map[string]string{
-				"run.googleapis.com/ingress": "internal",
+				"run.googleapis.com/ingress": "all",
 			}),
 		},
 		Template: cloudrun.ServiceTemplateArgs{
 			Metadata: cloudrun.ServiceTemplateMetadataArgs{
 				Annotations: pulumi.ToStringMap(map[string]string{
-					"run.googleapis.com/vpc-access-connector": "projects/taehoio-staging/locations/asia-northeast1/connectors/taehoio-vpc-access",
-					"run.googleapis.com/vpc-access-egress":    "all-traffic",
-					"autoscaling.knative.dev/maxScale":        "100",
+					"autoscaling.knative.dev/maxScale": "100",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
-						Image: pulumi.String(registryBasePath + serviceName + ":2e2dcbb5904afcf069a25b7f0b27d7799d0cd6a5"),
+						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								ContainerPort: pulumi.Int(50051),
@@ -326,12 +340,15 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		return nil, err
 	}
 
-	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
+	if _, err := cloudrun.NewIamBinding(ctx, serviceName+"-invoker", &cloudrun.IamBindingArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
 		Service:  baemincryptoCloudRunService.Name,
 		Role:     pulumi.String("roles/run.invoker"),
-		Member:   pulumi.String("allUsers"),
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", "apigateway@taehoio-staging.iam.gserviceaccount.com"),
+			pulumi.Sprintf("user:%s", "taeho@taeho.io"),
+		},
 	}); err != nil {
 		return nil, err
 	}
