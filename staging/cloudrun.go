@@ -4,6 +4,7 @@ import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/projects"
+	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/secretmanager"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/taehoio/iac"
@@ -30,10 +31,15 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	taehoioStrapi, err := newTaehoioStrapiCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
 	notionproxySA := stringOutPtrToStringOutput(notionproxy.Template.Spec().ServiceAccountName())
 	apigatewaySA := stringOutPtrToStringOutput(apigateway.Template.Spec().ServiceAccountName())
 	baemincryptoSA := stringOutPtrToStringOutput(baemincrypto.Template.Spec().ServiceAccountName())
 	youtube2notionSA := stringOutPtrToStringOutput(youtube2notion.Template.Spec().ServiceAccountName())
+	taehoioStrapiSA := stringOutPtrToStringOutput(taehoioStrapi.Template.Spec().ServiceAccountName())
 
 	_, err = projects.NewIAMBinding(ctx, "service-profiler-agent", &projects.IAMBindingArgs{
 		Project: project.ProjectId,
@@ -42,6 +48,7 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			pulumi.Sprintf("serviceAccount:%s", apigatewaySA),
 			pulumi.Sprintf("serviceAccount:%s", baemincryptoSA),
 			pulumi.Sprintf("serviceAccount:%s", youtube2notionSA),
+			pulumi.Sprintf("serviceAccount:%s", taehoioStrapiSA),
 		},
 		Role: pulumi.String("roles/cloudprofiler.agent"),
 	}, pulumi.Protect(false))
@@ -56,9 +63,21 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			pulumi.Sprintf("serviceAccount:%s", apigatewaySA),
 			pulumi.Sprintf("serviceAccount:%s", baemincryptoSA),
 			pulumi.Sprintf("serviceAccount:%s", youtube2notionSA),
+			pulumi.Sprintf("serviceAccount:%s", taehoioStrapiSA),
 		},
 		Role: pulumi.String("roles/cloudtrace.agent"),
 	}, pulumi.Protect(false))
+	if err != nil {
+		return err
+	}
+
+	_, err = projects.NewIAMBinding(ctx, "service-cloud-sql", &projects.IAMBindingArgs{
+		Project: project.ProjectId,
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", taehoioStrapiSA),
+		},
+		Role: pulumi.String("roles/cloudsql.client"),
+	})
 	if err != nil {
 		return err
 	}
@@ -99,6 +118,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								Name:          pulumi.String("http1"),
 								ContainerPort: pulumi.Int(3000),
 							},
 						},
@@ -185,6 +205,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								Name:          pulumi.String("http1"),
 								ContainerPort: pulumi.Int(8080),
 							},
 						},
@@ -325,8 +346,8 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
-								ContainerPort: pulumi.Int(50051),
 								Name:          pulumi.String("h2c"),
+								ContainerPort: pulumi.Int(50051),
 							},
 						},
 						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{},
@@ -400,6 +421,7 @@ func newYoutube2notionCloudRunService(ctx *pulumi.Context, project *organization
 						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								Name:          pulumi.String("http1"),
 								ContainerPort: pulumi.Int(5000),
 							},
 						},
@@ -440,4 +462,132 @@ func newYoutube2notionCloudRunService(ctx *pulumi.Context, project *organization
 	}
 
 	return youtube2notionCloudRunService, nil
+}
+
+func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
+	serviceName := "taehoio-strapi"
+
+	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
+		Project:     project.ProjectId,
+		AccountId:   pulumi.String(serviceName),
+		DisplayName: pulumi.String(serviceName),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	secret, err := secretmanager.NewSecret(ctx, serviceName+"-secret-mysql-password", &secretmanager.SecretArgs{
+		Project:  project.ProjectId,
+		SecretId: pulumi.String(serviceName + "-secret-mysql-password"),
+		Replication: &secretmanager.SecretReplicationArgs{
+			Automatic: pulumi.Bool(true),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = secretmanager.NewSecretIamMember(ctx, serviceName+"secret-access-mysql-password", &secretmanager.SecretIamMemberArgs{
+		Project:  project.ProjectId,
+		SecretId: secret.ID(),
+		Role:     pulumi.String("roles/secretmanager.secretAccessor"),
+		Member:   pulumi.Sprintf("serviceAccount:%s", sa.Email),
+	}, pulumi.DependsOn([]pulumi.Resource{
+		secret,
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	imageTag := "a809d3ed14c277426bbd079fde20bf29723e7a91"
+
+	taehoioStrapiCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+		Project:                  project.ProjectId,
+		Location:                 pulumi.String(iac.TokyoLocation),
+		Name:                     pulumi.String(serviceName),
+		AutogenerateRevisionName: pulumi.Bool(true),
+		Metadata: cloudrun.ServiceMetadataArgs{
+			Annotations: pulumi.ToStringMap(map[string]string{
+				"run.googleapis.com/ingress": "all",
+			}),
+		},
+		Template: cloudrun.ServiceTemplateArgs{
+			Metadata: cloudrun.ServiceTemplateMetadataArgs{
+				Annotations: pulumi.ToStringMap(map[string]string{
+					"autoscaling.knative.dev/maxScale":         "10",
+					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
+					"run.googleapis.com/execution-environment": "gen1",
+				}),
+			},
+			Spec: cloudrun.ServiceTemplateSpecArgs{
+				ContainerConcurrency: pulumi.Int(100),
+				Containers: cloudrun.ServiceTemplateSpecContainerArray{
+					cloudrun.ServiceTemplateSpecContainerArgs{
+						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
+						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
+							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								Name:          pulumi.String("http1"),
+								ContainerPort: pulumi.Int(1337),
+							},
+						},
+						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("DATABASE_SOCKET_PATH"),
+								Value: pulumi.String("/cloudsql/taehoio-staging:asia-northeast1:taehoio-shared-mysql"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name: pulumi.String("DATABASE_PASSWORD"),
+								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
+									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
+										Name: secret.SecretId,
+										Key:  pulumi.String("1"),
+									},
+								},
+							},
+						},
+						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
+							Limits: pulumi.StringMap{
+								"cpu":    pulumi.String("1000m"),
+								"memory": pulumi.String("1024Mi"),
+							},
+						},
+						Args: pulumi.StringArray{},
+					},
+				},
+				ServiceAccountName: sa.Email,
+				TimeoutSeconds:     pulumi.Int(10),
+			},
+		},
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
+		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
+		Service:  taehoioStrapiCloudRunService.Name,
+		Role:     pulumi.String("roles/run.invoker"),
+		Member:   pulumi.String("allUsers"),
+	}); err != nil {
+		return nil, err
+	}
+
+	_, err = cloudrun.NewDomainMapping(ctx, "strapi-staging-taehoio", &cloudrun.DomainMappingArgs{
+		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
+		Name:     pulumi.String("strapi.staging.taeho.io"),
+		Metadata: cloudrun.DomainMappingMetadataArgs{
+			Namespace: project.ProjectId,
+		},
+		Spec: cloudrun.DomainMappingSpecArgs{
+			RouteName:       taehoioStrapiCloudRunService.Name,
+			CertificateMode: pulumi.String("AUTOMATIC"),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return taehoioStrapiCloudRunService, nil
 }

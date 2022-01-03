@@ -106,6 +106,24 @@ func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project
 
 	if _, err := dns.NewRecordSet(
 		ctx,
+		"strapi-staging-taehoio-cname",
+		&dns.RecordSetArgs{
+			Project:     project.ProjectId,
+			ManagedZone: mz.Name,
+			Name:        pulumi.String("strapi.staging.taeho.io."),
+			Type:        pulumi.String("CNAME"),
+			Rrdatas: pulumi.StringArray{
+				pulumi.String("ghs.googlehosted.com."),
+			},
+			Ttl: pulumi.Int(5),
+		},
+		pulumi.Protect(false),
+	); err != nil {
+		return err
+	}
+
+	if _, err := dns.NewRecordSet(
+		ctx,
 		"taehoio-a",
 		&dns.RecordSetArgs{
 			Project:     project.ProjectId,
