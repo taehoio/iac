@@ -26,9 +26,14 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	youtube2notion, err := newYoutube2notionCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
 	notionproxySA := stringOutPtrToStringOutput(notionproxy.Template.Spec().ServiceAccountName())
 	apigatewaySA := stringOutPtrToStringOutput(apigateway.Template.Spec().ServiceAccountName())
 	baemincryptoSA := stringOutPtrToStringOutput(baemincrypto.Template.Spec().ServiceAccountName())
+	youtube2notionSA := stringOutPtrToStringOutput(youtube2notion.Template.Spec().ServiceAccountName())
 
 	_, err = projects.NewIAMBinding(ctx, "service-profiler-agent", &projects.IAMBindingArgs{
 		Project: project.ProjectId,
@@ -36,6 +41,7 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			pulumi.Sprintf("serviceAccount:%s", notionproxySA),
 			pulumi.Sprintf("serviceAccount:%s", apigatewaySA),
 			pulumi.Sprintf("serviceAccount:%s", baemincryptoSA),
+			pulumi.Sprintf("serviceAccount:%s", youtube2notionSA),
 		},
 		Role: pulumi.String("roles/cloudprofiler.agent"),
 	}, pulumi.Protect(false))
@@ -49,6 +55,7 @@ func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			pulumi.Sprintf("serviceAccount:%s", notionproxySA),
 			pulumi.Sprintf("serviceAccount:%s", apigatewaySA),
 			pulumi.Sprintf("serviceAccount:%s", baemincryptoSA),
+			pulumi.Sprintf("serviceAccount:%s", youtube2notionSA),
 		},
 		Role: pulumi.String("roles/cloudtrace.agent"),
 	}, pulumi.Protect(false))
@@ -77,7 +84,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
-	imageTag := "52f02f82d17d12f043b72f444003db090be72f9a"
+	imageTag := "99155bcd92ea40e40657ea290a7b174154dd72fa"
 
 	notionproxyCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -98,7 +105,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
 							Limits: pulumi.StringMap{
 								"cpu":    pulumi.String("1000m"),
-								"memory": pulumi.String("256Mi"),
+								"memory": pulumi.String("512Mi"),
 							},
 						},
 					},
@@ -354,4 +361,83 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 	}
 
 	return baemincryptoCloudRunService, nil
+}
+
+func newYoutube2notionCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
+	serviceName := "youtube2notion"
+
+	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
+		Project:     project.ProjectId,
+		AccountId:   pulumi.String(serviceName),
+		DisplayName: pulumi.String(serviceName),
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	imageTag := "33a2b8326b95b42b4bd09258792f3c753dbd9a8d"
+
+	youtube2notionCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+		Project:                  project.ProjectId,
+		Location:                 pulumi.String(iac.TokyoLocation),
+		Name:                     pulumi.String(serviceName),
+		AutogenerateRevisionName: pulumi.Bool(true),
+		Metadata: cloudrun.ServiceMetadataArgs{
+			Annotations: pulumi.ToStringMap(map[string]string{
+				"run.googleapis.com/ingress": "all",
+			}),
+		},
+		Template: cloudrun.ServiceTemplateArgs{
+			Metadata: cloudrun.ServiceTemplateMetadataArgs{
+				Annotations: pulumi.ToStringMap(map[string]string{
+					"autoscaling.knative.dev/maxScale": "100",
+				}),
+			},
+			Spec: cloudrun.ServiceTemplateSpecArgs{
+				ContainerConcurrency: pulumi.Int(1),
+				Containers: cloudrun.ServiceTemplateSpecContainerArray{
+					cloudrun.ServiceTemplateSpecContainerArgs{
+						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
+						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
+							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								ContainerPort: pulumi.Int(5000),
+							},
+						},
+						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_PROFILE"),
+								Value: pulumi.String("true"),
+							},
+						},
+						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
+							Limits: pulumi.StringMap{
+								"cpu":    pulumi.String("4000m"),
+								"memory": pulumi.String("8192Mi"),
+							},
+						},
+						Args: pulumi.StringArray{
+							pulumi.String("app.py"),
+						},
+					},
+				},
+				ServiceAccountName: sa.Email,
+				TimeoutSeconds:     pulumi.Int(60 * 60),
+			},
+		},
+	}, pulumi.Protect(false))
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
+		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
+		Service:  youtube2notionCloudRunService.Name,
+		Role:     pulumi.String("roles/run.invoker"),
+		Member:   pulumi.String("allUsers"),
+	}); err != nil {
+		return nil, err
+	}
+
+	return youtube2notionCloudRunService, nil
 }
