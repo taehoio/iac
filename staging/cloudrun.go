@@ -499,7 +499,7 @@ func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations
 		return nil, err
 	}
 
-	imageTag := "a809d3ed14c277426bbd079fde20bf29723e7a91"
+	imageTag := "5faabbff1c9de7ebf4d0dddec9947b2c248d8316"
 
 	taehoioStrapiCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -514,13 +514,13 @@ func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations
 		Template: cloudrun.ServiceTemplateArgs{
 			Metadata: cloudrun.ServiceTemplateMetadataArgs{
 				Annotations: pulumi.ToStringMap(map[string]string{
-					"autoscaling.knative.dev/maxScale":         "10",
+					"autoscaling.knative.dev/maxScale":         "1",
 					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
 					"run.googleapis.com/execution-environment": "gen1",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
-				ContainerConcurrency: pulumi.Int(100),
+				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
 						Image: pulumi.Sprintf("%s%s:%s", registryBasePath, serviceName, imageTag),
