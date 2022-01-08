@@ -21,7 +21,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
-	imageTag := "6a1904ea8fae43ff1d7bdf0b5f5c0c82e3cbf5ed"
+	imageTag := "acf9f7dbf628726ffdf3268377b43e876b276b22"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,

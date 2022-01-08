@@ -21,7 +21,7 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		return nil, err
 	}
 
-	imageTag := "ba8fa3790c2998ce4ff302c147ff0207427a4c33"
+	imageTag := "d2408597fcbc45ee11545b54503364d209727e5a"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
