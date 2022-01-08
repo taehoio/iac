@@ -45,7 +45,7 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 		return nil, err
 	}
 
-	imageTag := "0b87a006f738e0a3371247cc622b00a32aabf3fd"
+	imageTag := "ff479374cfbc46dafaf1883a069de8e611bde68c"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -78,11 +78,15 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 						},
 						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("DATABASE_SOCKET_PATH"),
+								Name:  pulumi.String("MYSQL_NETWORK_TYPE"),
+								Value: pulumi.String("unix"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("MYSQL_ADDRESS"),
 								Value: pulumi.String("/cloudsql/taehoio-staging:asia-northeast1:taehoio-shared-mysql"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name: pulumi.String("DATABASE_PASSWORD"),
+								Name: pulumi.String("MYSQL_PASSWORD"),
 								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
 									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
 										Name: secret.SecretId,
