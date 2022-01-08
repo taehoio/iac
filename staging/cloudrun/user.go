@@ -3,8 +3,10 @@ package cloudrun
 import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
+	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/secretmanager"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
 	"github.com/taehoio/iac"
 )
 
@@ -20,7 +22,30 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 		return nil, err
 	}
 
-	imageTag := "b06f7347ab85c30c79fac96d228716e838f16734"
+	secret, err := secretmanager.NewSecret(ctx, serviceName+"-secret-mysql-password", &secretmanager.SecretArgs{
+		Project:  project.ProjectId,
+		SecretId: pulumi.String(serviceName + "-secret-mysql-password"),
+		Replication: &secretmanager.SecretReplicationArgs{
+			Automatic: pulumi.Bool(true),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = secretmanager.NewSecretIamMember(ctx, serviceName+"-secret-access-mysql-password", &secretmanager.SecretIamMemberArgs{
+		Project:  project.ProjectId,
+		SecretId: secret.ID(),
+		Role:     pulumi.String("roles/secretmanager.secretAccessor"),
+		Member:   pulumi.Sprintf("serviceAccount:%s", sa.Email),
+	}, pulumi.DependsOn([]pulumi.Resource{
+		secret,
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	imageTag := "0b87a006f738e0a3371247cc622b00a32aabf3fd"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -36,6 +61,7 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 			Metadata: cloudrun.ServiceTemplateMetadataArgs{
 				Annotations: pulumi.ToStringMap(map[string]string{
 					"autoscaling.knative.dev/maxScale":         "100",
+					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
 					"run.googleapis.com/execution-environment": "gen1",
 				}),
 			},
@@ -50,7 +76,21 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 								ContainerPort: pulumi.Int(18081),
 							},
 						},
-						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{},
+						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("DATABASE_SOCKET_PATH"),
+								Value: pulumi.String("/cloudsql/taehoio-staging:asia-northeast1:taehoio-shared-mysql"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name: pulumi.String("DATABASE_PASSWORD"),
+								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
+									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
+										Name: secret.SecretId,
+										Key:  pulumi.String("1"),
+									},
+								},
+							},
+						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
 							Limits: pulumi.StringMap{
 								"cpu":    pulumi.String("1000m"),

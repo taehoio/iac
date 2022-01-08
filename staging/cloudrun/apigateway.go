@@ -21,7 +21,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
-	imageTag := "478cae66658f8d85206601bc6fa2d4122c6706fb"
+	imageTag := "6a1904ea8fae43ff1d7bdf0b5f5c0c82e3cbf5ed"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -63,6 +63,14 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("BAEMINCRYPTO_GRPC_SERVICE_URL"),
 								Value: pulumi.String("https://baemincrypto-5hwa5dthla-an.a.run.app"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("USER_GRPC_SERVICE_ENDPOINT"),
+								Value: pulumi.String("user-5hwa5dthla-an.a.run.app:443"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("USER_GRPC_SERVICE_URL"),
+								Value: pulumi.String("https://user-5hwa5dthla-an.a.run.app"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),

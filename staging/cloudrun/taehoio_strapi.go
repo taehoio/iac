@@ -33,7 +33,7 @@ func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations
 		return nil, err
 	}
 
-	_, err = secretmanager.NewSecretIamMember(ctx, serviceName+"secret-access-mysql-password", &secretmanager.SecretIamMemberArgs{
+	_, err = secretmanager.NewSecretIamMember(ctx, serviceName+"-secret-access-mysql-password", &secretmanager.SecretIamMemberArgs{
 		Project:  project.ProjectId,
 		SecretId: secret.ID(),
 		Role:     pulumi.String("roles/secretmanager.secretAccessor"),
