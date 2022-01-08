@@ -51,7 +51,12 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 								ContainerPort: pulumi.Int(50051),
 							},
 						},
-						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{},
+						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ENV"),
+								Value: pulumi.String("staging"),
+							},
+						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
 							Limits: pulumi.StringMap{
 								"cpu":    pulumi.String("1000m"),
