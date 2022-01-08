@@ -5,30 +5,40 @@ import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
-
 	"github.com/taehoio/iac"
 )
 
-func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
-	serviceName := "notionproxy"
+func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
+	serviceName := "user"
 
 	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
 		Project:     project.ProjectId,
-		AccountId:   pulumi.String(serviceName),
-		DisplayName: pulumi.String(serviceName),
+		AccountId:   pulumi.String(serviceName + "-sa"), // gcp service account length should be between 6 and 30
+		DisplayName: pulumi.String(serviceName + "-sa"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
 	}
 
-	imageTag := "99155bcd92ea40e40657ea290a7b174154dd72fa"
+	imageTag := "b06f7347ab85c30c79fac96d228716e838f16734"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
 		AutogenerateRevisionName: pulumi.Bool(true),
+		Metadata: cloudrun.ServiceMetadataArgs{
+			Annotations: pulumi.ToStringMap(map[string]string{
+				"run.googleapis.com/ingress": "all",
+			}),
+		},
 		Template: cloudrun.ServiceTemplateArgs{
+			Metadata: cloudrun.ServiceTemplateMetadataArgs{
+				Annotations: pulumi.ToStringMap(map[string]string{
+					"autoscaling.knative.dev/maxScale":         "100",
+					"run.googleapis.com/execution-environment": "gen1",
+				}),
+			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
@@ -36,14 +46,15 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 						Image: pulumi.Sprintf("%s%s:%s", iac.DockerRegistryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
-								Name:          pulumi.String("http1"),
-								ContainerPort: pulumi.Int(3000),
+								Name:          pulumi.String("h2c"),
+								ContainerPort: pulumi.Int(18081),
 							},
 						},
+						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
 							Limits: pulumi.StringMap{
 								"cpu":    pulumi.String("1000m"),
-								"memory": pulumi.String("512Mi"),
+								"memory": pulumi.String("256Mi"),
 							},
 						},
 					},
@@ -57,29 +68,16 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
-	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
+	if _, err := cloudrun.NewIamBinding(ctx, serviceName+"-invoker", &cloudrun.IamBindingArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
 		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
-		Member:   pulumi.String("allUsers"),
+		Members: pulumi.StringArray{
+			pulumi.Sprintf("serviceAccount:%s", "apigateway@taehoio-staging.iam.gserviceaccount.com"),
+			pulumi.Sprintf("user:%s", "taeho@taeho.io"),
+		},
 	}); err != nil {
-		return nil, err
-	}
-
-	_, err = cloudrun.NewDomainMapping(ctx, "staging-taehoio", &cloudrun.DomainMappingArgs{
-		Project:  project.ProjectId,
-		Location: pulumi.String(iac.TokyoLocation),
-		Name:     pulumi.String("staging.taeho.io"),
-		Metadata: cloudrun.DomainMappingMetadataArgs{
-			Namespace: project.ProjectId,
-		},
-		Spec: cloudrun.DomainMappingSpecArgs{
-			RouteName:       service.Name,
-			CertificateMode: pulumi.String("AUTOMATIC"),
-		},
-	})
-	if err != nil {
 		return nil, err
 	}
 
