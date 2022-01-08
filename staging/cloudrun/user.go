@@ -45,7 +45,7 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 		return nil, err
 	}
 
-	imageTag := "ff479374cfbc46dafaf1883a069de8e611bde68c"
+	imageTag := "bb9e188e90baa566d6c84a77bd7efdd1b8da9fbb"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -78,6 +78,10 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 						},
 						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ENV"),
+								Value: pulumi.String("staging"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_NETWORK_TYPE"),
 								Value: pulumi.String("unix"),
 							},
@@ -93,6 +97,14 @@ func newUserCloudRunService(ctx *pulumi.Context, project *organizations.Project)
 										Key:  pulumi.String("1"),
 									},
 								},
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_PROFILE"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_TRACE"),
+								Value: pulumi.String("true"),
 							},
 						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
