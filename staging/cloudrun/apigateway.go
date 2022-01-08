@@ -21,9 +21,9 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
-	imageTag := "7973144f977996369f6ba2afd6227327fad227a6"
+	imageTag := "478cae66658f8d85206601bc6fa2d4122c6706fb"
 
-	apigatewayCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
@@ -36,7 +36,8 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		Template: cloudrun.ServiceTemplateArgs{
 			Metadata: cloudrun.ServiceTemplateMetadataArgs{
 				Annotations: pulumi.ToStringMap(map[string]string{
-					"autoscaling.knative.dev/maxScale": "100",
+					"autoscaling.knative.dev/maxScale":         "100",
+					"run.googleapis.com/execution-environment": "gen1",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
@@ -108,7 +109,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
-		Service:  apigatewayCloudRunService.Name,
+		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
 	}); err != nil {
@@ -123,7 +124,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 			Namespace: project.ProjectId,
 		},
 		Spec: cloudrun.DomainMappingSpecArgs{
-			RouteName:       apigatewayCloudRunService.Name,
+			RouteName:       service.Name,
 			CertificateMode: pulumi.String("AUTOMATIC"),
 		},
 	})
@@ -139,7 +140,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 			Namespace: project.ProjectId,
 		},
 		Spec: cloudrun.DomainMappingSpecArgs{
-			RouteName:       apigatewayCloudRunService.Name,
+			RouteName:       service.Name,
 			CertificateMode: pulumi.String("AUTOMATIC"),
 		},
 	})
@@ -147,5 +148,5 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
-	return apigatewayCloudRunService, nil
+	return service, nil
 }

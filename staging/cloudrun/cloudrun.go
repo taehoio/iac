@@ -16,6 +16,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	user, err := newUserCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
 	baemincrypto, err := newBaemincryptoCloudRunService(ctx, project)
 	if err != nil {
 		return err
@@ -36,6 +40,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		"roles/cloudprofiler.agent",
 		notionproxy,
 		apigateway,
+		user,
 		baemincrypto,
 		youtube2notion,
 		taehoioStrapi,
@@ -50,6 +55,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		"roles/cloudtrace.agent",
 		notionproxy,
 		apigateway,
+		user,
 		baemincrypto,
 		youtube2notion,
 		taehoioStrapi,
@@ -62,6 +68,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		project,
 		"service-cloud-sql",
 		"roles/cloudsql.client",
+		user,
 		taehoioStrapi,
 	); err != nil {
 		return err

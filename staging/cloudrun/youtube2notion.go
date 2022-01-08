@@ -23,7 +23,7 @@ func newYoutube2notionCloudRunService(ctx *pulumi.Context, project *organization
 
 	imageTag := "33a2b8326b95b42b4bd09258792f3c753dbd9a8d"
 
-	youtube2notionCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
@@ -79,12 +79,12 @@ func newYoutube2notionCloudRunService(ctx *pulumi.Context, project *organization
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
-		Service:  youtube2notionCloudRunService.Name,
+		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
 	}); err != nil {
 		return nil, err
 	}
 
-	return youtube2notionCloudRunService, nil
+	return service, nil
 }

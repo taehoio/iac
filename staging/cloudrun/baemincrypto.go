@@ -21,9 +21,9 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		return nil, err
 	}
 
-	imageTag := "2e2dcbb5904afcf069a25b7f0b27d7799d0cd6a5"
+	imageTag := "ba8fa3790c2998ce4ff302c147ff0207427a4c33"
 
-	baemincryptoCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
@@ -36,7 +36,8 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		Template: cloudrun.ServiceTemplateArgs{
 			Metadata: cloudrun.ServiceTemplateMetadataArgs{
 				Annotations: pulumi.ToStringMap(map[string]string{
-					"autoscaling.knative.dev/maxScale": "100",
+					"autoscaling.knative.dev/maxScale":         "100",
+					"run.googleapis.com/execution-environment": "gen1",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
@@ -71,7 +72,7 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 	if _, err := cloudrun.NewIamBinding(ctx, serviceName+"-invoker", &cloudrun.IamBindingArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
-		Service:  baemincryptoCloudRunService.Name,
+		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Members: pulumi.StringArray{
 			pulumi.Sprintf("serviceAccount:%s", "apigateway@taehoio-staging.iam.gserviceaccount.com"),
@@ -81,5 +82,5 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		return nil, err
 	}
 
-	return baemincryptoCloudRunService, nil
+	return service, nil
 }

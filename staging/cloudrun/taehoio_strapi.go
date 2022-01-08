@@ -47,7 +47,7 @@ func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations
 
 	imageTag := "5faabbff1c9de7ebf4d0dddec9947b2c248d8316"
 
-	taehoioStrapiCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
@@ -112,7 +112,7 @@ func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
-		Service:  taehoioStrapiCloudRunService.Name,
+		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
 	}); err != nil {
@@ -127,7 +127,7 @@ func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations
 			Namespace: project.ProjectId,
 		},
 		Spec: cloudrun.DomainMappingSpecArgs{
-			RouteName:       taehoioStrapiCloudRunService.Name,
+			RouteName:       service.Name,
 			CertificateMode: pulumi.String("AUTOMATIC"),
 		},
 	})
@@ -135,5 +135,5 @@ func newTaehoioStrapiCloudRunService(ctx *pulumi.Context, project *organizations
 		return nil, err
 	}
 
-	return taehoioStrapiCloudRunService, nil
+	return service, nil
 }
