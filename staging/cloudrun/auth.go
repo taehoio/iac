@@ -3,6 +3,7 @@ package cloudrun
 import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
+	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/secretmanager"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
@@ -25,7 +26,30 @@ func newAuthCloudRunService(
 		return nil, err
 	}
 
-	imageTag := "0518f13874e15c7b80727a59c83f42795eb42342"
+	secret, err := secretmanager.NewSecret(ctx, serviceName+"-secret-mysql-password", &secretmanager.SecretArgs{
+		Project:  project.ProjectId,
+		SecretId: pulumi.String(serviceName + "-secret-jwt-hmac-secret"),
+		Replication: &secretmanager.SecretReplicationArgs{
+			Automatic: pulumi.Bool(true),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = secretmanager.NewSecretIamMember(ctx, serviceName+"-secret-jwt-hmac-secret", &secretmanager.SecretIamMemberArgs{
+		Project:  project.ProjectId,
+		SecretId: secret.ID(),
+		Role:     pulumi.String("roles/secretmanager.secretAccessor"),
+		Member:   pulumi.Sprintf("serviceAccount:%s", sa.Email),
+	}, pulumi.DependsOn([]pulumi.Resource{
+		secret,
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	imageTag := "8951fb06402979eebfbaa486f318144632c7a734"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -67,6 +91,15 @@ func newAuthCloudRunService(
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_TRACE"),
 								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name: pulumi.String("JWT_HMAC_SECRET"),
+								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
+									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
+										Name: secret.SecretId,
+										Key:  pulumi.String("1"),
+									},
+								},
 							},
 						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
