@@ -9,23 +9,23 @@ import (
 	"github.com/taehoio/iac"
 )
 
-func newBaemincryptoCloudRunService(
+func newAuthCloudRunService(
 	ctx *pulumi.Context,
 	project *organizations.Project,
 	invokingServices []*cloudrun.Service,
 ) (*cloudrun.Service, error) {
-	serviceName := "baemincrypto"
+	serviceName := "auth"
 
 	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
 		Project:     project.ProjectId,
-		AccountId:   pulumi.String(serviceName),
-		DisplayName: pulumi.String(serviceName),
+		AccountId:   pulumi.String(serviceName + "-sa"), // gcp service account length should be between 6 and 30
+		DisplayName: pulumi.String(serviceName + "-sa"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
 	}
 
-	imageTag := "d2408597fcbc45ee11545b54503364d209727e5a"
+	imageTag := "0518f13874e15c7b80727a59c83f42795eb42342"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -52,7 +52,7 @@ func newBaemincryptoCloudRunService(
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								Name:          pulumi.String("h2c"),
-								ContainerPort: pulumi.Int(50051),
+								ContainerPort: pulumi.Int(18081),
 							},
 						},
 						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
@@ -60,11 +60,19 @@ func newBaemincryptoCloudRunService(
 								Name:  pulumi.String("ENV"),
 								Value: pulumi.String("staging"),
 							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_PROFILE"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_TRACE"),
+								Value: pulumi.String("true"),
+							},
 						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
 							Limits: pulumi.StringMap{
 								"cpu":    pulumi.String("1000m"),
-								"memory": pulumi.String("512Mi"),
+								"memory": pulumi.String("256Mi"),
 							},
 						},
 					},
