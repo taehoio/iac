@@ -9,7 +9,11 @@ import (
 	"github.com/taehoio/iac"
 )
 
-func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
+func newBaemincryptoCloudRunService(
+	ctx *pulumi.Context,
+	project *organizations.Project,
+	invokingServices []*cloudrun.Service,
+) (*cloudrun.Service, error) {
 	serviceName := "baemincrypto"
 
 	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
@@ -79,10 +83,7 @@ func newBaemincryptoCloudRunService(ctx *pulumi.Context, project *organizations.
 		Location: pulumi.String(iac.TokyoLocation),
 		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
-		Members: pulumi.StringArray{
-			pulumi.Sprintf("serviceAccount:%s", "apigateway@taehoio-staging.iam.gserviceaccount.com"),
-			pulumi.Sprintf("user:%s", "taeho@taeho.io"),
-		},
+		Members:  servicesToMembers(invokingServices),
 	}); err != nil {
 		return nil, err
 	}

@@ -16,15 +16,15 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
-	user, err := newUserCloudRunService(ctx, project)
+	user, err := newUserCloudRunService(ctx, project, []*cloudrun.Service{apigateway})
 	if err != nil {
 		return err
 	}
-	auth, err := newAuthCloudRunService(ctx, project)
+	auth, err := newAuthCloudRunService(ctx, project, []*cloudrun.Service{apigateway, user})
 	if err != nil {
 		return err
 	}
-	baemincrypto, err := newBaemincryptoCloudRunService(ctx, project)
+	baemincrypto, err := newBaemincryptoCloudRunService(ctx, project, []*cloudrun.Service{apigateway})
 	if err != nil {
 		return err
 	}
@@ -42,13 +42,15 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		project,
 		"service-profiler-agent",
 		"roles/cloudprofiler.agent",
-		notionproxy,
-		apigateway,
-		user,
-		auth,
-		baemincrypto,
-		youtube2notion,
-		taehoioStrapi,
+		[]*cloudrun.Service{
+			notionproxy,
+			apigateway,
+			user,
+			auth,
+			baemincrypto,
+			youtube2notion,
+			taehoioStrapi,
+		},
 	); err != nil {
 		return err
 	}
@@ -58,13 +60,15 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		project,
 		"service-trace-agent",
 		"roles/cloudtrace.agent",
-		notionproxy,
-		apigateway,
-		user,
-		auth,
-		baemincrypto,
-		youtube2notion,
-		taehoioStrapi,
+		[]*cloudrun.Service{
+			notionproxy,
+			apigateway,
+			user,
+			auth,
+			baemincrypto,
+			youtube2notion,
+			taehoioStrapi,
+		},
 	); err != nil {
 		return err
 	}
@@ -74,8 +78,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		project,
 		"service-cloud-sql",
 		"roles/cloudsql.client",
-		user,
-		taehoioStrapi,
+		[]*cloudrun.Service{
+			user,
+			taehoioStrapi,
+		},
 	); err != nil {
 		return err
 	}
@@ -88,8 +94,21 @@ func newIAMBinding(
 	project *organizations.Project,
 	name string,
 	role string,
-	svcs ...*cloudrun.Service,
+	svcs []*cloudrun.Service,
 ) error {
+	_, err := projects.NewIAMBinding(
+		ctx,
+		name,
+		&projects.IAMBindingArgs{
+			Project: project.ProjectId,
+			Members: servicesToMembers(svcs),
+			Role:    pulumi.String(role),
+		},
+	)
+	return err
+}
+
+func servicesToMembers(svcs []*cloudrun.Service) pulumi.StringArray {
 	var members pulumi.StringArray
 	for _, svc := range svcs {
 		members = append(
@@ -100,17 +119,7 @@ func newIAMBinding(
 			),
 		)
 	}
-
-	_, err := projects.NewIAMBinding(
-		ctx,
-		name,
-		&projects.IAMBindingArgs{
-			Project: project.ProjectId,
-			Members: members,
-			Role:    pulumi.String(role),
-		},
-	)
-	return err
+	return members
 }
 
 func stringOutPtrToStringOutput(spo pulumi.StringPtrOutput) pulumi.StringOutput {
