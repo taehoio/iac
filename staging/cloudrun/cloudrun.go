@@ -20,6 +20,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	auth, err := newAuthCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
 	baemincrypto, err := newBaemincryptoCloudRunService(ctx, project)
 	if err != nil {
 		return err
@@ -41,6 +45,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		notionproxy,
 		apigateway,
 		user,
+		auth,
 		baemincrypto,
 		youtube2notion,
 		taehoioStrapi,
@@ -56,6 +61,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		notionproxy,
 		apigateway,
 		user,
+		auth,
 		baemincrypto,
 		youtube2notion,
 		taehoioStrapi,
