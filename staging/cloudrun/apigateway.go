@@ -21,7 +21,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
-	imageTag := "acf9f7dbf628726ffdf3268377b43e876b276b22"
+	imageTag := "7e58c80c4d97e9f005498879b5e0c66146b977e5"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -73,6 +73,14 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 								Value: pulumi.String("https://user-5hwa5dthla-an.a.run.app"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("AUTH_GRPC_SERVICE_ENDPOINT"),
+								Value: pulumi.String("auth-5hwa5dthla-an.a.run.app:443"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("AUTH_GRPC_SERVICE_URL"),
+								Value: pulumi.String("https://auth-5hwa5dthla-an.a.run.app"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
 								Value: pulumi.String("true"),
 							},
@@ -81,20 +89,16 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 								Value: pulumi.String("/etc/ssl/certs/ca-certificates.crt"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("IS_IN_GCP"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_PROFILE"),
 								Value: pulumi.String("true"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_TRACE"),
 								Value: pulumi.String("true"),
-							},
-							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("IS_IN_GCP"),
-								Value: pulumi.String("true"),
-							},
-							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("ID_TOKEN"),
-								Value: pulumi.String("NOT_USED_IN_GCP"),
 							},
 						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{

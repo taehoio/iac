@@ -49,7 +49,7 @@ func newUserCloudRunService(
 		return nil, err
 	}
 
-	imageTag := "bb9e188e90baa566d6c84a77bd7efdd1b8da9fbb"
+	imageTag := "381f42c8400fdb66d5973b877b323168c0db9624"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -101,6 +101,26 @@ func newUserCloudRunService(
 										Key:  pulumi.String("1"),
 									},
 								},
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("AUTH_GRPC_SERVICE_ENDPOINT"),
+								Value: pulumi.String("auth-5hwa5dthla-an.a.run.app:443"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("AUTH_GRPC_SERVICE_URL"),
+								Value: pulumi.String("https://auth-5hwa5dthla-an.a.run.app"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("CA_CERT_FILE"),
+								Value: pulumi.String("/etc/ssl/certs/ca-certificates.crt"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("IS_IN_GCP"),
+								Value: pulumi.String("true"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_PROFILE"),
