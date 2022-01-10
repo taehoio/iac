@@ -49,7 +49,7 @@ func newAuthCloudRunService(
 		return nil, err
 	}
 
-	imageTag := "8951fb06402979eebfbaa486f318144632c7a734"
+	imageTag := "a013b96232a0ef2c94af581f83311d904162c2b9"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
