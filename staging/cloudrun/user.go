@@ -49,7 +49,7 @@ func newUserCloudRunService(
 		return nil, err
 	}
 
-	imageTag := "381f42c8400fdb66d5973b877b323168c0db9624"
+	imageTag := "5b27fef07416efe2cffcfd02b3d59fb95dfa84df"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -65,7 +65,6 @@ func newUserCloudRunService(
 			Metadata: cloudrun.ServiceTemplateMetadataArgs{
 				Annotations: pulumi.ToStringMap(map[string]string{
 					"autoscaling.knative.dev/maxScale":         "100",
-					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
 					"run.googleapis.com/execution-environment": "gen1",
 				}),
 			},
@@ -87,18 +86,22 @@ func newUserCloudRunService(
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_NETWORK_TYPE"),
-								Value: pulumi.String("unix"),
+								Value: pulumi.String("tcp"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_ADDRESS"),
-								Value: pulumi.String("/cloudsql/taehoio-staging:asia-northeast1:taehoio-shared-mysql"),
+								Value: pulumi.String("h49wwmbh031b.ap-northeast-2.psdb.cloud"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("MYSQL_USER"),
+								Value: pulumi.String("kukw7mfyniq8"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name: pulumi.String("MYSQL_PASSWORD"),
 								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
 									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
 										Name: secret.SecretId,
-										Key:  pulumi.String("1"),
+										Key:  pulumi.String("2"),
 									},
 								},
 							},
