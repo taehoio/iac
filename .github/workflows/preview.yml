@@ -32,7 +32,7 @@ jobs:
       - name: Install Pulumi CLI
         uses: pulumi/setup-pulumi@v2
         with:
-          pulumi-version: 3.21.1
+          pulumi-version: 3.23.2
 
       - name: Download go mod dependencies
         run: go mod download
