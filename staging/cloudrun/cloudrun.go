@@ -32,10 +32,6 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
-	taehoioStrapi, err := newTaehoioStrapiCloudRunService(ctx, project)
-	if err != nil {
-		return err
-	}
 
 	if err := newIAMBinding(
 		ctx,
@@ -49,7 +45,6 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			auth,
 			baemincrypto,
 			youtube2notion,
-			taehoioStrapi,
 		},
 	); err != nil {
 		return err
@@ -67,7 +62,6 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			auth,
 			baemincrypto,
 			youtube2notion,
-			taehoioStrapi,
 		},
 	); err != nil {
 		return err
@@ -80,7 +74,6 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		"roles/cloudsql.client",
 		[]*cloudrun.Service{
 			user,
-			taehoioStrapi,
 		},
 	); err != nil {
 		return err
