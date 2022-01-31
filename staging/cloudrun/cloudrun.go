@@ -12,6 +12,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	oneononeapp, err := newOneononeappCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
 	apigateway, err := newApigatewayCloudRunService(ctx, project)
 	if err != nil {
 		return err
@@ -40,6 +44,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		"roles/cloudprofiler.agent",
 		[]*cloudrun.Service{
 			notionproxy,
+			oneononeapp,
 			apigateway,
 			user,
 			auth,
@@ -57,6 +62,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		"roles/cloudtrace.agent",
 		[]*cloudrun.Service{
 			notionproxy,
+			oneononeapp,
 			apigateway,
 			user,
 			auth,
