@@ -3,25 +3,53 @@ package cloudrun
 import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
+	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/secretmanager"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/taehoio/iac"
 )
 
-func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
-	serviceName := "apigateway"
+func newOneononeCloudRunService(
+	ctx *pulumi.Context,
+	project *organizations.Project,
+	invokingServices []*cloudrun.Service,
+) (*cloudrun.Service, error) {
+	serviceName := "oneonone"
 
 	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
 		Project:     project.ProjectId,
-		AccountId:   pulumi.String(serviceName),
-		DisplayName: pulumi.String(serviceName),
+		AccountId:   pulumi.String(serviceName + "-sa"), // gcp service account length should be between 6 and 30
+		DisplayName: pulumi.String(serviceName + "-sa"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
 	}
 
-	imageTag := "9c6f03b77146ea75f52c7e470f9b1f38ea2698b2"
+	secret, err := secretmanager.NewSecret(ctx, serviceName+"-secret-mysql-password", &secretmanager.SecretArgs{
+		Project:  project.ProjectId,
+		SecretId: pulumi.String(serviceName + "-secret-mysql-password"),
+		Replication: &secretmanager.SecretReplicationArgs{
+			Automatic: pulumi.Bool(true),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = secretmanager.NewSecretIamMember(ctx, serviceName+"-secret-access-mysql-password", &secretmanager.SecretIamMemberArgs{
+		Project:  project.ProjectId,
+		SecretId: secret.ID(),
+		Role:     pulumi.String("roles/secretmanager.secretAccessor"),
+		Member:   pulumi.Sprintf("serviceAccount:%s", sa.Email),
+	}, pulumi.DependsOn([]pulumi.Resource{
+		secret,
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	imageTag := "df7efa9e39b6f010fb4a97392463bf80f9bc3feb"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -47,8 +75,8 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 						Image: pulumi.Sprintf("%s%s:%s", iac.DockerRegistryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
-								Name:          pulumi.String("http1"),
-								ContainerPort: pulumi.Int(8080),
+								Name:          pulumi.String("h2c"),
+								ContainerPort: pulumi.Int(18081),
 							},
 						},
 						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
@@ -57,36 +85,25 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 								Value: pulumi.String("staging"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("BAEMINCRYPTO_GRPC_SERVICE_ENDPOINT"),
-								Value: pulumi.String("baemincrypto-5hwa5dthla-an.a.run.app:443"),
+								Name:  pulumi.String("MYSQL_NETWORK_TYPE"),
+								Value: pulumi.String("tcp"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("BAEMINCRYPTO_GRPC_SERVICE_URL"),
-								Value: pulumi.String("https://baemincrypto-5hwa5dthla-an.a.run.app"),
+								Name:  pulumi.String("MYSQL_ADDRESS"),
+								Value: pulumi.String("h49wwmbh031b.ap-northeast-2.psdb.cloud"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("USER_GRPC_SERVICE_ENDPOINT"),
-								Value: pulumi.String("user-5hwa5dthla-an.a.run.app:443"),
+								Name:  pulumi.String("MYSQL_USER"),
+								Value: pulumi.String("kukw7mfyniq8"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("USER_GRPC_SERVICE_URL"),
-								Value: pulumi.String("https://user-5hwa5dthla-an.a.run.app"),
-							},
-							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("AUTH_GRPC_SERVICE_ENDPOINT"),
-								Value: pulumi.String("auth-5hwa5dthla-an.a.run.app:443"),
-							},
-							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("AUTH_GRPC_SERVICE_URL"),
-								Value: pulumi.String("https://auth-5hwa5dthla-an.a.run.app"),
-							},
-							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("ONEONONE_GRPC_SERVICE_ENDPOINT"),
-								Value: pulumi.String("oneonone-5hwa5dthla-an.a.run.app:443"),
-							},
-							cloudrun.ServiceTemplateSpecContainerEnvArgs{
-								Name:  pulumi.String("ONEONONE_GRPC_SERVICE_URL"),
-								Value: pulumi.String("https://oneonone-5hwa5dthla-an.a.run.app"),
+								Name: pulumi.String("MYSQL_PASSWORD"),
+								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
+									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
+										Name: secret.SecretId,
+										Key:  pulumi.String("1"),
+									},
+								},
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
@@ -126,45 +143,13 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
-	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
+	if _, err := cloudrun.NewIamBinding(ctx, serviceName+"-invoker", &cloudrun.IamBindingArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
 		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
-		Member:   pulumi.String("allUsers"),
+		Members:  servicesToMembers(invokingServices),
 	}); err != nil {
-		return nil, err
-	}
-
-	_, err = cloudrun.NewDomainMapping(ctx, "api-staging-taehoio", &cloudrun.DomainMappingArgs{
-		Project:  project.ProjectId,
-		Location: pulumi.String(iac.TokyoLocation),
-		Name:     pulumi.String("api.staging.taeho.io"),
-		Metadata: cloudrun.DomainMappingMetadataArgs{
-			Namespace: project.ProjectId,
-		},
-		Spec: cloudrun.DomainMappingSpecArgs{
-			RouteName:       service.Name,
-			CertificateMode: pulumi.String("AUTOMATIC"),
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = cloudrun.NewDomainMapping(ctx, "api-taehoio", &cloudrun.DomainMappingArgs{
-		Project:  project.ProjectId,
-		Location: pulumi.String(iac.TokyoLocation),
-		Name:     pulumi.String("api.taeho.io"),
-		Metadata: cloudrun.DomainMappingMetadataArgs{
-			Namespace: project.ProjectId,
-		},
-		Spec: cloudrun.DomainMappingSpecArgs{
-			RouteName:       service.Name,
-			CertificateMode: pulumi.String("AUTOMATIC"),
-		},
-	})
-	if err != nil {
 		return nil, err
 	}
 
