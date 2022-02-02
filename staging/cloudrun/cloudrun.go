@@ -32,6 +32,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	oneonone, err := newOneononeCloudRunService(ctx, project, []*cloudrun.Service{apigateway})
+	if err != nil {
+		return err
+	}
 	youtube2notion, err := newYoutube2notionCloudRunService(ctx, project)
 	if err != nil {
 		return err
@@ -49,6 +53,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			user,
 			auth,
 			baemincrypto,
+			oneonone,
 			youtube2notion,
 		},
 	); err != nil {
@@ -67,6 +72,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			user,
 			auth,
 			baemincrypto,
+			oneonone,
 			youtube2notion,
 		},
 	); err != nil {

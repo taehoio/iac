@@ -21,7 +21,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
-	imageTag := "99155bcd92ea40e40657ea290a7b174154dd72fa"
+	imageTag := "d712864dfe6ebe66838d9f93d9102fa6af323c2c"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
