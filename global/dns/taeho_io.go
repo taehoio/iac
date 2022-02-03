@@ -1,4 +1,4 @@
-package main
+package dns
 
 import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/dns"
@@ -10,7 +10,7 @@ const (
 	taehoioDNSManagedZones = "taehoio"
 )
 
-func runTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project) error {
+func RunTaehoioDNSRecordSets(ctx *pulumi.Context, project *organizations.Project) error {
 	mz, err := dns.NewManagedZone(
 		ctx,
 		"taehoio",

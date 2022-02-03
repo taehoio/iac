@@ -4,6 +4,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/taehoio/iac"
+	"github.com/taehoio/iac/global/dns"
 )
 
 func main() {
@@ -15,7 +16,10 @@ func main() {
 		}
 
 		// DNS
-		if err := runTaehoioDNSRecordSets(ctx, project); err != nil {
+		if err := dns.RunTaehoioDNSRecordSets(ctx, project); err != nil {
+			return err
+		}
+		if err := dns.RunGabojagocomDNSRecordSets(ctx, project); err != nil {
 			return err
 		}
 
