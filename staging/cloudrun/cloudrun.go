@@ -86,6 +86,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		"roles/cloudsql.client",
 		[]*cloudrun.Service{
 			user,
+			oneonone,
 		},
 	); err != nil {
 		return err

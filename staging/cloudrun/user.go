@@ -49,7 +49,7 @@ func newUserCloudRunService(
 		return nil, err
 	}
 
-	imageTag := "5b27fef07416efe2cffcfd02b3d59fb95dfa84df"
+	imageTag := "99c910d64f02c19b521aa106728a22a8074ca2d2"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -66,6 +66,7 @@ func newUserCloudRunService(
 				Annotations: pulumi.ToStringMap(map[string]string{
 					"autoscaling.knative.dev/maxScale":         "100",
 					"run.googleapis.com/execution-environment": "gen1",
+					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
@@ -86,24 +87,28 @@ func newUserCloudRunService(
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_NETWORK_TYPE"),
-								Value: pulumi.String("tcp"),
+								Value: pulumi.String("unix"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_ADDRESS"),
-								Value: pulumi.String("h49wwmbh031b.ap-northeast-2.psdb.cloud"),
+								Value: pulumi.String("/cloudsql/taehoio-staging:asia-northeast1:taehoio-shared-mysql"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_USER"),
-								Value: pulumi.String("kukw7mfyniq8"),
+								Value: pulumi.String("taehoio_sa"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name: pulumi.String("MYSQL_PASSWORD"),
 								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
 									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
 										Name: secret.SecretId,
-										Key:  pulumi.String("2"),
+										Key:  pulumi.String("3"),
 									},
 								},
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("MYSQL_DATABASE_NAME"),
+								Value: pulumi.String("taehoio"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("AUTH_GRPC_SERVICE_ENDPOINT"),
