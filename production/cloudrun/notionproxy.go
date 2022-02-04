@@ -1,22 +1,13 @@
-package main
+package cloudrun
 
 import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
-	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/projects"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/taehoio/iac"
 )
-
-func runCloudRunServices(ctx *pulumi.Context, project *organizations.Project) error {
-	if _, err := newNotionproxyCloudRunService(ctx, project); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.Project) (*cloudrun.Service, error) {
 	serviceName := "notionproxy"
@@ -30,29 +21,9 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
-	_, err = projects.NewIAMBinding(ctx, serviceName+"-profiler-agent", &projects.IAMBindingArgs{
-		Project: project.ProjectId,
-		Members: pulumi.StringArray{
-			pulumi.Sprintf("serviceAccount:%s", sa.Email),
-		},
-		Role: pulumi.String("roles/cloudprofiler.agent"),
-	}, pulumi.Protect(false))
-	if err != nil {
-		return nil, err
-	}
+	imageTag := "d712864dfe6ebe66838d9f93d9102fa6af323c2c"
 
-	_, err = projects.NewIAMBinding(ctx, serviceName+"-trace-agent", &projects.IAMBindingArgs{
-		Project: project.ProjectId,
-		Members: pulumi.StringArray{
-			pulumi.Sprintf("serviceAccount:%s", sa.Email),
-		},
-		Role: pulumi.String("roles/cloudtrace.agent"),
-	}, pulumi.Protect(false))
-	if err != nil {
-		return nil, err
-	}
-
-	notionproxyCloudRunService, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
+	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
 		Location:                 pulumi.String(iac.TokyoLocation),
 		Name:                     pulumi.String(serviceName),
@@ -62,9 +33,10 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 				ContainerConcurrency: pulumi.Int(80),
 				Containers: cloudrun.ServiceTemplateSpecContainerArray{
 					cloudrun.ServiceTemplateSpecContainerArgs{
-						Image: pulumi.String(iac.DockerRegistryBasePath + serviceName + "@sha256:0ef41356e21c272066057d335bd48a79131b8a4e6e4eace137f6bcdcdb90b4f5"),
+						Image: pulumi.Sprintf("%s%s:%s", iac.DockerRegistryBasePath, serviceName, imageTag),
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
+								Name:          pulumi.String("http1"),
 								ContainerPort: pulumi.Int(3000),
 							},
 						},
@@ -88,7 +60,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 	if _, err := cloudrun.NewIamMember(ctx, serviceName+"-everyone", &cloudrun.IamMemberArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
-		Service:  notionproxyCloudRunService.Name,
+		Service:  service.Name,
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
 	}); err != nil {
@@ -103,7 +75,7 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 			Namespace: project.ProjectId,
 		},
 		Spec: cloudrun.DomainMappingSpecArgs{
-			RouteName:       notionproxyCloudRunService.Name,
+			RouteName:       service.Name,
 			CertificateMode: pulumi.String("AUTOMATIC"),
 		},
 	})
@@ -111,5 +83,5 @@ func newNotionproxyCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
-	return notionproxyCloudRunService, nil
+	return service, nil
 }

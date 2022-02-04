@@ -4,6 +4,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/taehoio/iac"
+	"github.com/taehoio/iac/production/cloudrun"
 )
 
 func main() {
@@ -13,7 +14,7 @@ func main() {
 			return err
 		}
 
-		if err := runCloudRunServices(ctx, project); err != nil {
+		if err := cloudrun.RunCloudRunServices(ctx, project); err != nil {
 			return err
 		}
 
