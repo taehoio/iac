@@ -21,7 +21,7 @@ func newOneononeappCloudRunService(ctx *pulumi.Context, project *organizations.P
 		return nil, err
 	}
 
-	imageTag := "fb6b8d7e7a1ca53809a8ef38a0621c4f5e069371"
+	imageTag := "79193b272762b98006b0926bf905a1d7ec278221"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,

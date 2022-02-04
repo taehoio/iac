@@ -49,7 +49,7 @@ func newOneononeCloudRunService(
 		return nil, err
 	}
 
-	imageTag := "df7efa9e39b6f010fb4a97392463bf80f9bc3feb"
+	imageTag := "3a9bd40534bf0aba86bcb07a2acbc06deb1db704"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -66,6 +66,7 @@ func newOneononeCloudRunService(
 				Annotations: pulumi.ToStringMap(map[string]string{
 					"autoscaling.knative.dev/maxScale":         "100",
 					"run.googleapis.com/execution-environment": "gen1",
+					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
@@ -86,24 +87,28 @@ func newOneononeCloudRunService(
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_NETWORK_TYPE"),
-								Value: pulumi.String("tcp"),
+								Value: pulumi.String("unix"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_ADDRESS"),
-								Value: pulumi.String("h49wwmbh031b.ap-northeast-2.psdb.cloud"),
+								Value: pulumi.String("/cloudsql/taehoio-staging:asia-northeast1:taehoio-shared-mysql"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("MYSQL_USER"),
-								Value: pulumi.String("kukw7mfyniq8"),
+								Value: pulumi.String("oneonone_sa"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name: pulumi.String("MYSQL_PASSWORD"),
 								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
 									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
 										Name: secret.SecretId,
-										Key:  pulumi.String("1"),
+										Key:  pulumi.String("2"),
 									},
 								},
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("MYSQL_DATABASE_NAME"),
+								Value: pulumi.String("oneonone"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
