@@ -40,6 +40,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	karrot, err := newKarrotCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
 
 	if err := newIAMBinding(
 		ctx,
@@ -55,6 +59,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			baemincrypto,
 			oneonone,
 			youtube2notion,
+			karrot,
 		},
 	); err != nil {
 		return err
@@ -74,6 +79,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			baemincrypto,
 			oneonone,
 			youtube2notion,
+			karrot,
 		},
 	); err != nil {
 		return err
