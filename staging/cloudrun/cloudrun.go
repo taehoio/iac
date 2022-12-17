@@ -52,6 +52,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	api, err := newApiCloudRunService(ctx, project)
+	if err != nil {
+		return err
+	}
 
 	if err := newIAMBinding(
 		ctx,
@@ -70,6 +74,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			karrot,
 			texttospeech,
 			car,
+			api,
 		},
 	); err != nil {
 		return err
@@ -91,6 +96,8 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			youtube2notion,
 			karrot,
 			texttospeech,
+			car,
+			api,
 		},
 	); err != nil {
 		return err
@@ -104,6 +111,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 		[]*cloudrun.Service{
 			user,
 			oneonone,
+			api,
 		},
 	); err != nil {
 		return err
