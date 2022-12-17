@@ -3,6 +3,7 @@ package cloudrun
 import (
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
+	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/secretmanager"
 	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
@@ -21,7 +22,30 @@ func newApiCloudRunService(ctx *pulumi.Context, project *organizations.Project) 
 		return nil, err
 	}
 
-	imageTag := "798d4290ea82c01e73da7ea0fc2c739f79823b61"
+	oneononeMysqlPasswordSecret, err := secretmanager.NewSecret(ctx, serviceName+"-secret-oneonone-mysql-password", &secretmanager.SecretArgs{
+		Project:  project.ProjectId,
+		SecretId: pulumi.String(serviceName + "-secret-oneonone-mysql-password"),
+		Replication: &secretmanager.SecretReplicationArgs{
+			Automatic: pulumi.Bool(true),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = secretmanager.NewSecretIamMember(ctx, serviceName+"-secret-access-mysql-password", &secretmanager.SecretIamMemberArgs{
+		Project:  project.ProjectId,
+		SecretId: oneononeMysqlPasswordSecret.ID(),
+		Role:     pulumi.String("roles/secretmanager.secretAccessor"),
+		Member:   pulumi.Sprintf("serviceAccount:%s", sa.Email),
+	}, pulumi.DependsOn([]pulumi.Resource{
+		oneononeMysqlPasswordSecret,
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	imageTag := "8c5fac8be4baf0315312d274253a11c945f86a9c"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -38,6 +62,7 @@ func newApiCloudRunService(ctx *pulumi.Context, project *organizations.Project) 
 				Annotations: pulumi.ToStringMap(map[string]string{
 					"autoscaling.knative.dev/maxScale":         "100",
 					"run.googleapis.com/execution-environment": "gen1",
+					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{
@@ -55,6 +80,31 @@ func newApiCloudRunService(ctx *pulumi.Context, project *organizations.Project) 
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("ENV"),
 								Value: pulumi.String("staging"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ONEONONE_MYSQL_NETWORK_TYPE"),
+								Value: pulumi.String("unix"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ONEONONE_MYSQL_ADDRESS"),
+								Value: pulumi.String("/cloudsql/taehoio-staging:asia-northeast1:taehoio-shared-mysql"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ONEONONE_MYSQL_USER"),
+								Value: pulumi.String("oneonone_sa"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name: pulumi.String("ONEONONE_MYSQL_PASSWORD"),
+								ValueFrom: &cloudrun.ServiceTemplateSpecContainerEnvValueFromArgs{
+									SecretKeyRef: &cloudrun.ServiceTemplateSpecContainerEnvValueFromSecretKeyRefArgs{
+										Name: oneononeMysqlPasswordSecret.SecretId,
+										Key:  pulumi.String("1"),
+									},
+								},
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("ONEONONE_MYSQL_DATABASE_NAME"),
+								Value: pulumi.String("oneonone"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
@@ -101,6 +151,22 @@ func newApiCloudRunService(ctx *pulumi.Context, project *organizations.Project) 
 		Role:     pulumi.String("roles/run.invoker"),
 		Member:   pulumi.String("allUsers"),
 	}); err != nil {
+		return nil, err
+	}
+
+	_, err = cloudrun.NewDomainMapping(ctx, "api-staging-taehoio", &cloudrun.DomainMappingArgs{
+		Project:  project.ProjectId,
+		Location: pulumi.String(iac.TokyoLocation),
+		Name:     pulumi.String("api-staging.taeho.io"),
+		Metadata: cloudrun.DomainMappingMetadataArgs{
+			Namespace: project.ProjectId,
+		},
+		Spec: cloudrun.DomainMappingSpecArgs{
+			RouteName:       service.Name,
+			CertificateMode: pulumi.String("AUTOMATIC"),
+		},
+	})
+	if err != nil {
 		return nil, err
 	}
 
