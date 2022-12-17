@@ -21,7 +21,7 @@ func newKarrotCloudRunService(ctx *pulumi.Context, project *organizations.Projec
 		return nil, err
 	}
 
-	imageTag := "1bb6bfebea599551cf00596c6e6c8edccb26ae0e"
+	imageTag := "e88720eb5d00b2ba32bdce25474484239b624520"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,

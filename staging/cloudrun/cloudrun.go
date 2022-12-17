@@ -48,6 +48,10 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
+	car, err := newCarCloudRunService(ctx, project, []*cloudrun.Service{apigateway})
+	if err != nil {
+		return err
+	}
 
 	if err := newIAMBinding(
 		ctx,
@@ -65,6 +69,7 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 			youtube2notion,
 			karrot,
 			texttospeech,
+			car,
 		},
 	); err != nil {
 		return err
