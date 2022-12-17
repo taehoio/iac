@@ -21,7 +21,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 		return nil, err
 	}
 
-	imageTag := "e38b0113f817e94abfeaf9f025f340c1bd682068"
+	imageTag := "2008b7dd6abebd28d82f2e93a5b6372e7ec1a8f5"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -89,6 +89,10 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 								Value: pulumi.String("https://oneonone-5hwa5dthla-an.a.run.app"),
 							},
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("CAR_GRPC_SERVICE_URL"),
+								Value: pulumi.String("https://car-5hwa5dthla-an.a.run.app"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
 								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
 								Value: pulumi.String("true"),
 							},
@@ -139,7 +143,7 @@ func newApigatewayCloudRunService(ctx *pulumi.Context, project *organizations.Pr
 	_, err = cloudrun.NewDomainMapping(ctx, "api-staging-taehoio", &cloudrun.DomainMappingArgs{
 		Project:  project.ProjectId,
 		Location: pulumi.String(iac.TokyoLocation),
-		Name:     pulumi.String("api.staging.taeho.io"),
+		Name:     pulumi.String("api-staging.taeho.io"),
 		Metadata: cloudrun.DomainMappingMetadataArgs{
 			Namespace: project.ProjectId,
 		},

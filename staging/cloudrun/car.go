@@ -9,23 +9,23 @@ import (
 	"github.com/taehoio/iac"
 )
 
-func newBaemincryptoCloudRunService(
+func newCarCloudRunService(
 	ctx *pulumi.Context,
 	project *organizations.Project,
 	invokingServices []*cloudrun.Service,
 ) (*cloudrun.Service, error) {
-	serviceName := "baemincrypto"
+	serviceName := "car"
 
 	sa, err := serviceaccount.NewAccount(ctx, serviceName, &serviceaccount.AccountArgs{
 		Project:     project.ProjectId,
-		AccountId:   pulumi.String(serviceName),
-		DisplayName: pulumi.String(serviceName),
+		AccountId:   pulumi.String(serviceName + "-sa"), // gcp service account length should be between 6 and 30
+		DisplayName: pulumi.String(serviceName + "-sa"),
 	}, pulumi.Protect(false))
 	if err != nil {
 		return nil, err
 	}
 
-	imageTag := "4b3049a6e84204d21a407a08481042c894b90134"
+	imageTag := "7e846ca2e9bd68ed45a09ad6a30f0f5b85bd7d8b"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -52,7 +52,7 @@ func newBaemincryptoCloudRunService(
 						Ports: cloudrun.ServiceTemplateSpecContainerPortArray{
 							cloudrun.ServiceTemplateSpecContainerPortArgs{
 								Name:          pulumi.String("h2c"),
-								ContainerPort: pulumi.Int(50051),
+								ContainerPort: pulumi.Int(18081),
 							},
 						},
 						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
@@ -60,11 +60,31 @@ func newBaemincryptoCloudRunService(
 								Name:  pulumi.String("ENV"),
 								Value: pulumi.String("staging"),
 							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_PROFILE"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_TRACE"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("SHOULD_USE_GRPC_CLIENT_TLS"),
+								Value: pulumi.String("true"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("CA_CERT_FILE"),
+								Value: pulumi.String("/etc/ssl/certs/ca-certificates.crt"),
+							},
+							cloudrun.ServiceTemplateSpecContainerEnvArgs{
+								Name:  pulumi.String("IS_IN_GCP"),
+								Value: pulumi.String("true"),
+							},
 						},
 						Resources: cloudrun.ServiceTemplateSpecContainerResourcesArgs{
 							Limits: pulumi.StringMap{
 								"cpu":    pulumi.String("1000m"),
-								"memory": pulumi.String("512Mi"),
+								"memory": pulumi.String("256Mi"),
 							},
 						},
 					},
