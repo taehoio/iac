@@ -1,10 +1,10 @@
 package cloudrun
 
 import (
-	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/cloudrun"
-	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/organizations"
-	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/secretmanager"
-	"github.com/pulumi/pulumi-gcp/sdk/v5/go/gcp/serviceaccount"
+	"github.com/pulumi/pulumi-gcp/sdk/v6/go/gcp/cloudrun"
+	"github.com/pulumi/pulumi-gcp/sdk/v6/go/gcp/organizations"
+	"github.com/pulumi/pulumi-gcp/sdk/v6/go/gcp/secretmanager"
+	"github.com/pulumi/pulumi-gcp/sdk/v6/go/gcp/serviceaccount"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/taehoio/iac"
@@ -75,6 +75,12 @@ func newApiCloudRunService(ctx *pulumi.Context, project *organizations.Project) 
 								Name:          pulumi.String("http1"),
 								ContainerPort: pulumi.Int(18082),
 							},
+						},
+						StartupProbe: &cloudrun.ServiceTemplateSpecContainerStartupProbeArgs{
+							HttpGet: &cloudrun.ServiceTemplateSpecContainerStartupProbeHttpGetArgs{
+								Path: pulumi.String("/"),
+							},
+							PeriodSeconds: pulumi.Int(1),
 						},
 						Envs: cloudrun.ServiceTemplateSpecContainerEnvArray{
 							cloudrun.ServiceTemplateSpecContainerEnvArgs{
