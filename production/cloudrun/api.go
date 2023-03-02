@@ -45,7 +45,7 @@ func newApiCloudRunService(ctx *pulumi.Context, project *organizations.Project) 
 		return nil, err
 	}
 
-	imageTag := "7f83b2c015da6b944137d6d30a119c2f78cc43c8"
+	imageTag := "7b90d72c886453349839e0d81d8598057926e45b"
 
 	service, err := cloudrun.NewService(ctx, serviceName, &cloudrun.ServiceArgs{
 		Project:                  project.ProjectId,
@@ -63,6 +63,8 @@ func newApiCloudRunService(ctx *pulumi.Context, project *organizations.Project) 
 					"autoscaling.knative.dev/maxScale":         "100",
 					"run.googleapis.com/execution-environment": "gen1",
 					"run.googleapis.com/cloudsql-instances":    "taehoio-staging:asia-northeast1:taehoio-shared-mysql",
+					"run.googleapis.com/cpu-throttling":        "true",
+					"run.googleapis.com/startup-cpu-boost":     "true",
 				}),
 			},
 			Spec: cloudrun.ServiceTemplateSpecArgs{

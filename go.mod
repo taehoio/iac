@@ -1,6 +1,6 @@
 module github.com/taehoio/iac
 
-go 1.19
+go 1.20
 
 require (
 	github.com/pulumi/pulumi-gcp/sdk/v6 v6.45.0
