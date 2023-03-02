@@ -16,10 +16,6 @@ func RunCloudRunServices(ctx *pulumi.Context, project *organizations.Project) er
 	if err != nil {
 		return err
 	}
-	api, err := newApiCloudRunService(ctx, project)
-	if err != nil {
-		return err
-	}
 
 	if err := newIAMBinding(
 		ctx,
